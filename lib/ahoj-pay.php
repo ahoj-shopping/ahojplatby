@@ -1,0 +1,754 @@
+<?php
+
+namespace Ahoj;
+
+require_once "ahoj-api-repository.php";
+require_once "ahoj-exceptions.php";
+
+class AhojPay
+{
+    const VERSION = "0.1";
+    const JS_PLUGIN_SCRIPT_URL = "https://eshop.test.psws.xyz/merchant/plugin/ahojpay.js";
+
+    const PRODUCT_TYPE_CODE = "GOODS_DEFERRED_PAYMENT";
+
+    const PRODUCT_BANNER_CSS_CLASS = "ahojpay-product-banner";
+    const PAYMENT_METHOD_DESC_CSS_CLASS = "ahojpay-payment-method-description";
+
+    protected $promotionInfo = null;
+    protected $repository;
+    protected $config;
+
+    /**
+     * Priklad pouzitia:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(
+     *          "mode" => "test",
+     *          "businessPlace" => "TEST_ESHOP",
+     *          "eshopKey" => "1111111111aaaaaaaaaa2222",
+     *          "notificationCallbackUrl" => "https://eshop.com/notifications/ahojpay/",
+     *      ));
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param array $config Pole s parametrami pre configuraciu sluzby AhojPay, ktore obsahuje:
+     * - mode ("test"|"prod") - required: prevádzkový režim Pluginu, (nadobúda hodnotu „test“ alebo „prod“)
+     * - businessPlace (string) - required: identifikátor E-shopu v rámci služby AhojPay pridelený v priebehu integrácie E-shopu
+     * - eshopKey (string) - required: autorizačný kľúč predajného miesta
+     * - notificationCallbackUrl (string) - required: notifikačný URL odkaz definovaný E-shopom, ktorý slúži informovanie E-shopu zo strany Pluginu o stave procesu spracovania žiadosti, napr.: https://E-shop.sk/ notificationCallback'
+     *
+     * @throws Ahoj\InvalidArgumentException V pripade, ze config nie je validny.
+     * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
+     * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad pri InternalServerError
+     */
+    function __construct($config)
+    {
+        $this->validateConfig($config);
+        $this->config = $config;
+        $this->repository = new AhojApiRepository(
+            $config["eshopKey"],
+            $config["mode"]
+        );
+        try {
+            $this->promotionInfo = $this->getPromotionInfo();
+        } catch (ApiErrorException $apiException) {
+        }
+    }
+
+    /**
+     * API calls
+     */
+
+    /**
+     * Funkcia pre zlozenie ziadosti v sluzbe AhojPay.
+     *
+     * Priklad pouzitia:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      $response = $ahojpay->createApplication(array(
+     *          "orderNumber" => 1234,
+     *          "completionUrl" => "https://example.com/complete/1234/whatever
+     *          "terminationUrl" => "https://example.com/error/1234/whatever
+     *          "eshopRegisteredCustomer" => false,
+     *          "customer" => array(
+     *              "firstName" => "Zákazník",
+     *              "lastName" => "Nakupujúci",
+     *              "contactInfo" => array(
+     *                  "email" => "developer@ahoj.shopping",
+     *                  "mobile" => "421944130665"
+     *              ),
+     *              "permanentAddress" => array(
+     *                  "street" => "Ulicová",
+     *                  "registerNumber" => "123",
+     *                  "referenceNumber" => "456/A",
+     *                  "city" => "Mestečko",
+     *                  "zipCode" => "98765",
+     *              )
+     *          ),
+     *          "product" => array(
+     *              "goods" => array(
+     *                  array(
+     *                      "name" => "Bicykel",
+     *                      "price" => 199.9,
+     *                      "id" => "1234567890",
+     *                      "count" => 1,
+     *                      "additionalServices" => array(
+     *                          array(
+     *                              "id" => "9876543210",
+     *                              "name" => "Poistenie",
+     *                              "price" => 9.99
+     *                          )
+     *                      )
+     *                  )
+     *              ),
+     *              "goodsDeliveryCosts" => 3.5
+     *          )
+     *      ));
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param array $applicationParameters - array typu Application popisany v integracnej prirucke
+     * @return array Pole s hodnotami popisanymi nizsie:
+     * Parametre v navratovej hodnote (pole):
+     * - applicationUrl (string):URL, na ktorej zadava klient svoje udaje potrebne pre poskytnutie sluzby AhojPay. Zobrazuje sa v iframe za pomoci JS.
+     * - contractNumber (string): Cislo novo vytvoreneho kontraktu
+     *
+     * @throws Ahoj\InvalidArgumentException V pripade, ze vstup $applicationParameters nie je validny.
+     * @throws Ahoj\TotalPriceExceedsLimitsException V pripade, celkova suma objednavky prekracuje limity urcene pre sluzbu AhojPay (minGoodsPrice a maxGoodsPrice)
+     * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
+     * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
+     */
+    function createApplication($applicationParameters)
+    {
+        $this->checkAvailabilityAndThrow();
+        $this->validateApplicationParameters($applicationParameters);
+
+        $applicationRequest = $applicationParameters;
+
+        if (!empty($this->config["notificationCallbackUrl"])) {
+            $applicationRequest["notificationCallbackUrl"] =
+                $this->config["notificationCallbackUrl"];
+        }
+        $applicationRequest["product"]["promotion"] = array(
+            "code" => $this->promotionInfo["code"],
+        );
+        $applicationRequest["businessPlace"] = $this->config["businessPlace"];
+        // By default is this ESHOP. Should be configurable in future versions od AhojPay service
+        $applicationRequest["salesChannel"] = "ESHOP";
+        $applicationRequest["state"] = "DRAFT";
+
+        // always SK - integration manual
+        $applicationRequest["customer"]["permanentAddress"]["country"] = array(
+            "code" => "SK",
+        );
+
+        $totalOrderPrice = $this->calculateTotalOrderPrice($applicationRequest);
+        if (
+            $totalOrderPrice < $this->promotionInfo["minGoodsPrice"] ||
+            $totalOrderPrice > $this->promotionInfo["maxGoodsPrice"]
+        ) {
+            throw new TotalPriceExceedsLimitsException();
+        }
+
+        $response = $this->repository->httpPostApplication($applicationRequest);
+        $responseBody = $response["body"];
+        $responseCode = $response["code"];
+
+        if ($responseCode == 400) {
+            throw new InvalidArgumentException($responseBody["message"]);
+        }
+
+        if ($responseCode > 200) {
+            throw new ApiErrorException($responseBody, $responseCode);
+        }
+
+        $contractNumber = $responseBody["contractNumber"];
+
+        return array(
+            "applicationUrl" => $this->getApplicationUrl(
+                $contractNumber,
+                isset($applicationRequest["completionUrl"])
+                    ? $applicationRequest["completionUrl"]
+                    : null,
+                isset($applicationRequest["terminationUrl"])
+                    ? $applicationRequest["terminationUrl"]
+                    : null
+            ),
+            "contractNumber" => $contractNumber,
+        );
+    }
+
+    /**
+     * Metoda na ziskavanie URL, na ktorej zadava klient svoje udaje potrebne pre poskytnutie sluzby AhojPay.
+     *
+     * @param string $contractNumber Cislo konktraktu, ktory je vrateny pri volani funkcie `createApplication()`
+     * @param string|null $completionUrl
+     * @param string|null $terminationUrl
+     * @return string URL kde klient zadava udaje potrebne pre poskytnutie sluzby. null v pripade, ze nie je mozne ziskat URL zo servera.
+     *
+     * @throws Ahoj\ContractNotExistException V pripade, ze ziadost s cislom $contractNumber neexistuje
+     * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
+     * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
+     */
+    function getApplicationUrl(
+        $contractNumber,
+        $completionUrl = null,
+        $terminationUrl = null
+    ) {
+        $this->checkAvailabilityAndThrow();
+
+        $response = $this->repository->httpGetApplicationUrl(
+            $contractNumber,
+            array(
+                "completionUrl" => $completionUrl,
+                "earlyTerminationUrl" => $terminationUrl,
+            )
+        );
+        $responseBody = $response["body"];
+        $responseCode = $response["code"];
+
+        if ($responseCode == 404) {
+            throw new ContractNotExistException(
+                "Ziadost s cislom \"$contractNumber\" neexistuje"
+            );
+        }
+
+        if ($responseCode > 200) {
+            throw new ApiErrorException($responseBody, $responseCode);
+        }
+
+        return $responseBody;
+    }
+
+    /**
+     * Funkcia pre ziskavvanie stavu ziadosti (vsetky info o nej)
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      $applicationState = $ahojpay->createApplication("1231231231");
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param string $contractNumber Cislo ziadost
+     * @return string Vrati stav ziadosti
+     *
+     * @throws Ahoj\ContractNotExistException V pripade, ze ziadost s cislom $contractNumber neexistuje
+     * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
+     */
+    function getApplicationState($contractNumber)
+    {
+        $response = $this->repository->httpGetApplicationInfo($contractNumber);
+        $responseBody = $response["body"];
+        $responseCode = $response["code"];
+
+        if ($responseCode == 404) {
+            throw new ContractNotExistException(
+                "Ziadost s cislom \"$contractNumber\" neexistuje"
+            );
+        }
+
+        if ($responseCode > 200) {
+            throw new ApiErrorException($responseBody, $responseCode);
+        }
+
+        return $responseBody["state"];
+    }
+
+    /**
+     * Funkcia na ziskavanie nastavenia sluzby AhojPay. V pripade, ze je sluzba pre businessPlace (definovany v konstruktore).
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      $promotionInfo = $ahojpay->getPromotionInfo();
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param boolean $forceReload V pripade, ze je nastaveny parameter na `true` dopytuje sa metoda na server pre ziskanie cerstvych dat. Ak je parameter nastaveny na `false` vrati zapamatanu poslednu hodnotu ak existuje. Inak sa dopytuje na server. By default `false`
+     * @return null|array Info o nastaveni sluzby. null v pripade, ze nie je sluzba pre businessPlace (zadany v konstruktore) aktivna. Array obsahuje:
+     * - instalmentIntervalDays (number): Doba odkladu prvej splátky, resp. splátkový interval v dňoch - v nasom pripade 30 (dni)
+     * - minGoodsPrice (number): Minimálna výška MOC financovaných tovarov / služieb mimo prepravy
+     * - minGoodsItemPrice (number): Minimálna výška MOC jednej tovarovej položky
+     * - maxGoodsPrice (number): Maximálna výška MOC tovaru pre existujúceho klienta – cena zahŕňa financované tovary a služby mimo prepravy,
+     * - maxGoodsPriceProspect (number): Maximálna výška MOC tovaru pre nového klienta – cena zahŕňa financované tovary a služby mimo prepravy,
+     * - interest (number): výška úroku za službu v percentách (decimal number)
+     *
+     * @throws ApiErrorException V pripade, ze volanie na server neskonci uspesne. Napriklad pri InternalServerError alebo BadRequest.
+     */
+    function getPromotionInfo($forceReload = false)
+    {
+        if (!$forceReload && $this->promotionInfo) {
+            return $this->promotionInfo;
+        }
+
+        $response = $this->repository->httpGetPromotions(
+            $this->config["businessPlace"]
+        );
+        $responseBody = $response["body"];
+        $responseCode = $response["code"];
+
+        if ($responseCode > 200) {
+            throw new ApiErrorException($responseBody, $responseCode);
+        }
+
+        $promotionInfo = null;
+
+        foreach ($responseBody as $promotion) {
+            if (
+                $promotion["productType"] &&
+                $promotion["productType"]["code"] == self::PRODUCT_TYPE_CODE
+            ) {
+                $promotionInfo = array(
+                    "code" => $promotion["code"],
+                    "name" => $promotion["name"],
+                    "description" => $promotion["description"],
+                    "instalmentIntervalDays" =>
+                        $promotion["instalmentIntervalDays"],
+                    "minGoodsPrice" => $promotion["minGoodsPrice"],
+                    "minGoodsItemPrice" => $promotion["minGoodsItemPrice"],
+                    "maxGoodsPrice" => $promotion["maxGoodsPrice"],
+                    "maxGoodsPriceProspect" =>
+                        $promotion["maxGoodsPriceProspect"],
+                    "interest" => array_key_exists("interest", $promotion)
+                        ? $promotion["interest"]
+                        : 0,
+                );
+            }
+        }
+        return $promotionInfo;
+    }
+
+    /**
+     * HTML generation
+     */
+
+    /**
+     * Vygenerovanie HTML/JS kodu s inicializaciou JS pluginu za pomoci dat z PHP
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      echo $ahojpay->generateInitJavaScriptHtml();
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param string $scriptUrl Cesta k JS scriptu. Pre testovacie ucely
+     */
+    function generateInitJavaScriptHtml($scriptUrl = self::JS_PLUGIN_SCRIPT_URL)
+    {
+        $jsPromotionInfoStr = json_encode($this->promotionInfo);
+
+        $html = "";
+        $html .= "<script type=\"text/javascript\" src=\"$scriptUrl\"></script>\n";
+        $html .= "<script type=\"text/javascript\">\n";
+        $html .= "(function() {\n";
+        $html .= "    var promotionInfo = JSON.parse('$jsPromotionInfoStr');\n";
+        $html .= "    ahojpay.init(promotionInfo);\n";
+        $html .= "})();\n";
+        $html .= "</script>\n";
+        return $html;
+    }
+
+    /**
+     * Vygenerovanie HTML/JS kodu, ktory pomocou JS vykresluje produktovy banner. Tato funkcia generuje aj div element s css class, do ktoreho bude produktovy banner vykresleny.
+     * V pripade, ze pre zadanu cenu produktu nie je mozne vyuzit sluzbu AhojPay produktovy banner nebude zobrazeny.
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      echo $ahojpay->generateInitJavaScriptHtml();
+     *      echo $ahojpay->generateProductBannerHtml(123.45);
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param string|number $price suma jednotkovej ceny za tovar a všetkých doplnkových služieb zvolených Zákazníkom. Suma je uvádzaná v EUR s DPH.
+     * @param string|null $cssClass Css trieda používaná pre div element, do ktorého má byť vykreslený produktový mini banner. Inicializačná hodnota je `ahojpay-product-banner`
+     *
+     * @return string vygenerovaný HTML kód s obsahom mini banera
+     */
+    function generateProductBannerHtml(
+        $goodsAndServicesPrice,
+        $cssClass = self::PRODUCT_BANNER_CSS_CLASS
+    ) {
+        $html = "<div class=\"$cssClass\"></div>\n";
+        $html .= "<script type=\"text/javascript\">\n";
+        $html .= "(function() {\n";
+        $html .= "    ahojpay.productBanner(\"$goodsAndServicesPrice\", \".$cssClass\")\n";
+        $html .= "})();\n";
+        $html .= "</script>\n";
+        return $html;
+    }
+
+    /**
+     * Vygenerovanie HTML/JS kodu, ktory pomocou JS vykresluje popis k platobnej metode.
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      echo $ahojpay->generateInitJavaScriptHtml();
+     *      echo $ahojpay->generatePaymentMethodDescriptionHtml(1230.45);
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param string|number $price celková suma objednaných tovarov vrátane doplnkových služieb bez ceny nákladov na prepravu tovaru v EUR s DPH
+     * @param string|null $cssClass Css trieda používaná pre div element, do ktorého má byť vykreslený popis k platbe prostredníctvom služby KTZo30d. Inicializačná hodnota je `ahojpay-payment-method-description`.
+     *
+     * @return string vygenerovaný HTML kód s obsahom popisu platobnej metódy
+     */
+    function generatePaymentMethodDescriptionHtml(
+        $price,
+        $cssClass = self::PAYMENT_METHOD_DESC_CSS_CLASS
+    ) {
+        $html = "<div class=\"$cssClass\"></div>\n";
+        $html .= "<script type=\"text/javascript\">\n";
+        $html .= "(function() {\n";
+        $html .= "    ahojpay.paymentMethodDescription(\"$price\", \".$cssClass\")\n";
+        $html .= "})();\n";
+        $html .= "</script>\n";
+        return $html;
+    }
+
+    /**
+     * Vygenerovanie HTML/JS kodu, ktory pomocou JS otvori iframe so ziadostou hned po nacitani stranky.
+     *
+     * Priklad:
+     * <?php
+     * try {
+     *      $ahojpay = new Ahoj\AhojPay(array(...));
+     *      echo $ahojpay->generateInitJavaScriptHtml();
+     *      echo $ahojpay->generateApplicationIframeOnLoadHtml(array(...), 2000);
+     * } catch (Exception $e) {
+     *    // Error handling
+     * }
+     * ?>
+     *
+     * @param array $applicationParameters Array s parametrami na vytvorenie ziadosti. Rovnake ako pri funkcii createApplication
+     * @param number|null $delay Cas v ms, ktory sa bude cakat po loade stranky nez sa otvori iframe so ziadostou.
+     *
+     * @throws Ahoj\InvalidArgumenContractNotExistExceptiontException V pripade, ze $applicationParameters nie je validny.
+     * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
+     * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
+     */
+    function generateApplicationIframeOnLoadHtml(
+        $applicationParameters,
+        $delay = 0
+    ) {
+        $delay = is_numeric($delay) ? $delay : 0;
+        $applicationResult = $this->createApplication($applicationParameters);
+
+        if (empty($applicationResult)) {
+            return "";
+        }
+        $applicationUrl = $applicationResult["applicationUrl"];
+
+        $html = "<script type=\"text/javascript\">\n";
+        $html .= "(function() {\n";
+        $html .= "    var delay = Number($delay);\n";
+        $html .= "    setTimeout(() => {\n";
+        $html .= "        ahojpay.openApplication(\"$applicationUrl\");\n";
+        $html .= "    }, delay);\n";
+        $html .= "})();\n";
+        $html .= "</script>\n";
+        return $html;
+    }
+
+    /**
+     * public helper methods
+     */
+
+    /**
+     * Vrati true ak je sluzba AhojPay dostupna
+     */
+    function isAvailable()
+    {
+        return $this->promotionInfo != null;
+    }
+
+    /**
+     * @param number $totalPrice celková suma objednaných tovarov vrátane doplnkových služieb bez ceny nákladov na prepravu tovaru v EUR s DPH
+     * @return boolean parameter definuje, či suma objednávky (spolu s doplnkovými službami k tovaru - poistenie, predĺžená záruka a pod.) vyhovuje intervalu medzi minimálnou a maximálnou sumou objednávky, pričom do sumy objednávky sa nezapočítavajú náklady spojené s prepravou tovaru (poštovné, balné a pod.) a služba AhojPay je pre daný E-shop dostupná.
+     */
+    function isAvailableForTotalPrice($totalPrice)
+    {
+        return $this->isAvailable() &&
+            $this->promotionInfo["minGoodsPrice"] <= $totalPrice &&
+            $this->promotionInfo["maxGoodsPrice"] >= $totalPrice;
+    }
+
+    /**
+     * Vrati true ak je AhojPay sluzba aktivna a ak pre sumu $productPrice je mozne tuto sluzbu pouzit.
+     *
+     * @param number $productPrice Cena produktu
+     */
+    function isAvailableForItemPrice($productPrice)
+    {
+        return $this->isAvailable() &&
+            $this->promotionInfo["minGoodsItemPrice"] <= $productPrice &&
+            $this->promotionInfo["maxGoodsPrice"] >= $productPrice;
+    }
+
+    /**
+     * protected
+     */
+
+    /**
+     * private
+     */
+    private function validateConfig($config)
+    {
+        $requiredConfigKeys = array(
+            "mode",
+            "businessPlace",
+            "eshopKey",
+            "notificationCallbackUrl",
+        );
+
+        foreach ($requiredConfigKeys as $configKey) {
+            if (empty($config[$configKey]) || !is_string($config[$configKey])) {
+                throw new InvalidArgumentException(
+                    "$configKey je povinny udaj"
+                );
+            }
+        }
+    }
+
+    private function getValueByKey($key, $data, $default = null)
+    {
+        if (!is_string($key) || empty($key) || !count($data)) {
+            return $default;
+        }
+
+        if (strpos($key, ".") !== false) {
+            $keys = explode(".", $key);
+            foreach ($keys as $innerKey) {
+                if (!array_key_exists($innerKey, $data)) {
+                    return $default;
+                }
+                $data = $data[$innerKey];
+            }
+            return $data;
+        }
+        return array_key_exists($key, $data) ? $data[$key] : $default;
+    }
+
+    private function calculateTotalOrderPrice($applicationParameters)
+    {
+        $totalPrice = 0.0;
+
+        foreach ($applicationParameters["product"]["goods"] as $good) {
+            $amountOfGood = $good["count"] >= 1 ? $good["count"] : 1;
+            $totalPrice += $amountOfGood * $good["price"];
+
+            if (isset($good["additionalServices"])) {
+                foreach ($good["additionalServices"] as $additionalService) {
+                    $totalPrice += $additionalService["price"];
+                }
+            }
+        }
+
+        // add delivery costs
+        if (isset($applicationParameters["product"]["goodsDeliveryCosts"])) {
+            $totalPrice +=
+                $applicationParameters["product"]["goodsDeliveryCosts"];
+        }
+
+        return $totalPrice;
+    }
+
+    private function validateApplicationParameters($applicationParameters)
+    {
+        if (!is_array($applicationParameters)) {
+            throw new InvalidArgumentException(
+                "vstupny parameter musi byt array"
+            );
+        }
+        if (
+            !array_key_exists("orderNumber", $applicationParameters) ||
+            !(
+                is_string($applicationParameters["orderNumber"]) ||
+                is_numeric($applicationParameters["orderNumber"])
+            ) ||
+            $applicationParameters["orderNumber"] === ""
+        ) {
+            throw new InvalidArgumentException("orderNumber je povinny udaj");
+        }
+        if (
+            !array_key_exists(
+                "eshopRegisteredCustomer",
+                $applicationParameters
+            ) ||
+            !is_bool($applicationParameters["eshopRegisteredCustomer"])
+        ) {
+            throw new InvalidArgumentException(
+                "eshopRegisteredCustomer je povinny boolean udaj"
+            );
+        }
+        // customer
+        if (!array_key_exists("customer", $applicationParameters)) {
+            throw new InvalidArgumentException("customer je povinny udaj");
+        }
+        if (
+            !array_key_exists("contactInfo", $applicationParameters["customer"])
+        ) {
+            throw new InvalidArgumentException(
+                "customer.contactInfo je povinny udaj"
+            );
+        }
+        // customer required fields
+        $customerRequiredStringFields = array(
+            "firstName",
+            "lastName",
+            "contactInfo.email",
+            "permanentAddress.street",
+            "permanentAddress.city",
+            "permanentAddress.zipCode",
+        );
+        foreach ($customerRequiredStringFields as $customerKey) {
+            $value = $this->getValueByKey(
+                $customerKey,
+                $applicationParameters["customer"],
+                null
+            );
+            if (!is_string($value) || $value === "") {
+                throw new InvalidArgumentException(
+                    "customer.$customerKey je povinny textovy udaj"
+                );
+            }
+        }
+        // product
+        if (!array_key_exists("product", $applicationParameters)) {
+            throw new InvalidArgumentException("product je povinny udaj");
+        }
+        // product.goodsDeliveryCosts
+        if (
+            !array_key_exists(
+                "goodsDeliveryCosts",
+                $applicationParameters["product"]
+            ) ||
+            !is_numeric($applicationParameters["product"]["goodsDeliveryCosts"])
+        ) {
+            throw new InvalidArgumentException(
+                "product.goodsDeliveryCosts je povinny numericky udaj"
+            );
+        }
+        // product.goods
+        if (
+            !array_key_exists("goods", $applicationParameters["product"]) ||
+            !is_array($applicationParameters["product"]["goods"]) ||
+            count($applicationParameters["product"]["goods"]) <= 0
+        ) {
+            throw new InvalidArgumentException(
+                "product.goods je povinny udaj a musi obsahovat aspon jednu hodnotu"
+            );
+        }
+        foreach (
+            $applicationParameters["product"]["goods"]
+            as $goodItemKey => $goodItem
+        ) {
+            if (
+                !array_key_exists("name", $goodItem) ||
+                !is_string($goodItem["name"]) ||
+                $goodItem["name"] === ""
+            ) {
+                throw new InvalidArgumentException(
+                    "product.goods[$goodItemKey].name je povinny textovy udaj"
+                );
+            }
+            if (
+                !array_key_exists("price", $goodItem) ||
+                !is_numeric($goodItem["price"])
+            ) {
+                throw new InvalidArgumentException(
+                    "product.goods[$goodItemKey].price je povinny numericky udaj"
+                );
+            }
+            if (
+                !array_key_exists("id", $goodItem) ||
+                !is_string($goodItem["id"]) ||
+                $goodItem["id"] === ""
+            ) {
+                throw new InvalidArgumentException(
+                    "product.goods[$goodItemKey].id je povinny textovy udaj"
+                );
+            }
+            if (
+                !array_key_exists("count", $goodItem) ||
+                !is_numeric($goodItem["count"])
+            ) {
+                throw new InvalidArgumentException(
+                    "product.goods[$goodItemKey].count je povinny numericky udaj"
+                );
+            }
+
+            if (array_key_exists("additionalServices", $goodItem)) {
+                if (!is_array($goodItem["additionalServices"])) {
+                    throw new InvalidArgumentException(
+                        "product.goods[$goodItemKey].additionalServices je povinny udaj a musi obsahovat aspon jednu hodnotu"
+                    );
+                }
+                foreach (
+                    $goodItem["additionalServices"]
+                    as $additionalServicesItemKey => $additionalServicesItem
+                ) {
+                    if (
+                        !array_key_exists("id", $additionalServicesItem) ||
+                        !is_string($additionalServicesItem["id"]) ||
+                        $additionalServicesItem["id"] === ""
+                    ) {
+                        throw new InvalidArgumentException(
+                            "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].id je povinny textovy udaj"
+                        );
+                    }
+                    if (
+                        !array_key_exists("name", $additionalServicesItem) ||
+                        !is_string($additionalServicesItem["name"]) ||
+                        $additionalServicesItem["name"] === ""
+                    ) {
+                        throw new InvalidArgumentException(
+                            "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].name je povinny textovy udaj"
+                        );
+                    }
+                    if (
+                        !array_key_exists("price", $additionalServicesItem) ||
+                        !is_numeric($additionalServicesItem["price"])
+                    ) {
+                        throw new InvalidArgumentException(
+                            "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].price je povinny numericky udaj"
+                        );
+                    }
+                }
+            }
+        }
+    }
+
+    private function checkAvailabilityAndThrow()
+    {
+        if (!$this->isAvailable()) {
+            throw new ProductNotAvailableException(
+                "Sluzba AhojPay nie je pre zadany businessPlace dostupna. Skontrolujte prosim konfiguracne parametre alebo kontaktujte support."
+            );
+        }
+    }
+}

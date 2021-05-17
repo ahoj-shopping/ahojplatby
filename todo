@@ -1,0 +1,8 @@
+h1. ahojplatby platobny modul
+h2. struktura
+
+controllers
+- payment - zobrazenie platobneho tlacitka
+- validation - overenie a presmerovanie na platobnu branu (vytorenie objenavky v prestashop)
+classes
+- api
