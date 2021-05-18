@@ -1,36 +1,70 @@
 <?php
 
-include_once(dirname(__FILE__) . '/../../autoload.php');
-
-class AhojplatbyValidationModuleFrontController extends ModuleFrontController
+class AhojplatbyValidationModuleFrontController extends ParentController
 {
 	public function initContent()
 	{
 		parent::initContent();
-		
-		$this->context->smarty->assign(array(
-		    // 'PAY24_ACTION' => $action_url,
-		    // 'PAY24_MID' => $order->mid,
-		    // 'PAY24_ESHOPID' => $order->eshopId,
-		    // 'PAY24_MSTXNID' => $order->msTxnId,
-		    // 'PAY24_AMOUNT' => $order->amount,
-		    // 'PAY24_CURRALPHACODE' => $order->currAlphaCode,
-		    // 'PAY24_LANGUAGE' => $order->language,
-		    // 'PAY24_CLIENTID' => $order->clientId,
-		    // 'PAY24_FIRSTNAME' => $order->firstName,
-		    // 'PAY24_FAMILYNAME' => $order->familyName,
-		    // 'PAY24_EMAIL' => $order->email,
-		    // 'PAY24_COUNTRY' => $order->country,
-		    // 'PAY24_NURL' => $order->nurl,
-		    // 'PAY24_RURL' => $order->rurl,
-		    // 'PAY24_TIMESTAMP' => $order->timestamp,
-		    // 'PAY24_SIGN' => $order->sign,
-		    'AHOJPLATBY_MODULE_DEBUG' => Configuration::get('AHOJPLATBY_MODULE_DEBUG'),
-		));
+		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
 
-        $this->setTemplate('module:ahojplatby/views/templates/front/1_7/validation.tpl');
+		$id_order = Tools::getValue('id_order');
+		$action = Tools::getValue('action');
+		
+		$this->updateOrderState($id_order, $action);
+
+		die();
+		// $this->context->smarty->assign(array(
+		//     'AHOJPLATBY_MODULE_DEBUG' => $debug,
+		// ));
+
+		// $this->setRenderTemplate('front', 'validation.tpl');
 
 	}
 
-	
+	public function updateOrderState($id_order, $action)
+	{
+		if(!$id_order)
+		{
+			PrestaShopLogger::addLog(
+				'Validation: id_order not defined',
+				3,
+				null,
+				$this->module->name,
+				0,
+				true
+			);
+			return false;
+		}
+
+		switch ($action) {
+			case AhojApi::SUCCESS:
+				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_OK');
+				break;
+			case AhojApi::FAIL:
+				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL');
+				break;
+			
+			default:
+				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR');
+				break;
+		}
+
+		$order = new Order($id_order);
+		$extra_vars = array();
+		// Set the order status
+		$new_history = new OrderHistory();
+		$new_history->id_order = (int) $order->id;
+		$new_history->changeIdOrderState((int) $id_order_state, $order, true);
+		$new_history->addWithemail(true, $extra_vars);
+
+		PrestaShopLogger::addLog(
+			'Validation: add new state: '.$id_order_state,
+			1,
+			null,
+			$this->module->name,
+			$id_order,
+			true
+		);
+	}
+
 }

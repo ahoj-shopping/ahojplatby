@@ -97,8 +97,10 @@ class AhojApiRepository
         $responseBody = curl_exec($ch);
         $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $responseDecoded = json_decode($responseBody, true);
-        curl_close($ch);
 
+        if(curl_errno($ch)){ echo 'Curl error: ' . curl_error($ch); }
+        curl_close($ch);
+        
         return array(
             "body" => $responseDecoded,
             "code" => $responseCode,

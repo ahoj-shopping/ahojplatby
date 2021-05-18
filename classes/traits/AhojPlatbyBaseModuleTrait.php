@@ -68,6 +68,8 @@ trait AhojPlatbyBaseModuleTrait
 		$this->registerHook('payment');
 		$this->registerHook('paymentReturn');
 		$this->registerHook('paymentOptions');
+		// $this->registerHook('displayProductExtraContent');
+		$this->registerHook('displayProductAdditionalInfo');
 
 		return true;
 	}

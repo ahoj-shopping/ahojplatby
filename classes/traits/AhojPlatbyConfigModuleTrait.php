@@ -132,6 +132,13 @@ trait AhojPlatbyConfigModuleTrait
 					),
 					array(
 						'type' => 'text',
+						'label' => $this->l('Business Place'),
+						'name' => 'AHOJPLATBY_BUSINESS_PLACE',
+						'is_bool' => true,
+						'desc' => $this->l('ahoj platby business place'),
+					),
+					array(
+						'type' => 'text',
 						'label' => $this->l('API key'),
 						'name' => 'AHOJPLATBY_API_KEY',
 						'is_bool' => true,
@@ -164,6 +171,17 @@ trait AhojPlatbyConfigModuleTrait
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_FAIL',
 						'label' => $this->l('Platba zamietnuta'),
+						'options' => array(
+							'query' => $order_state_options,
+							'id' => 'id',
+							'name' => 'name'
+						)
+					),
+
+					array(
+						'type' => 'select',
+						'name' => 'AHOJPLATBY_ORDER_STATE_ERROR',
+						'label' => $this->l('Chyba API platby'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -225,9 +243,11 @@ trait AhojPlatbyConfigModuleTrait
 			'AHOJPLATBY_LIVE_MODE'    => Configuration::get('AHOJPLATBY_LIVE_MODE'),
 			'AHOJPLATBY_MODULE_DEBUG'    => Configuration::get('AHOJPLATBY_MODULE_DEBUG'),
 			'AHOJPLATBY_API_KEY'    => Configuration::get('AHOJPLATBY_API_KEY'),
+			'AHOJPLATBY_BUSINESS_PLACE'    => Configuration::get('AHOJPLATBY_BUSINESS_PLACE'),
 			'AHOJPLATBY_ORDER_STATE_AWAITING'    => Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'),
 			'AHOJPLATBY_ORDER_STATE_OK'    => Configuration::get('AHOJPLATBY_ORDER_STATE_OK'),
 			'AHOJPLATBY_ORDER_STATE_FAIL'    => Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'),
+			'AHOJPLATBY_ORDER_STATE_ERROR'    => Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR'),
 
 		);
 	}

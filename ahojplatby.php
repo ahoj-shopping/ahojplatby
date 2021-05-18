@@ -36,6 +36,7 @@ class ahojplatby extends PaymentModule
 	use AhojPlatbyConfigModuleTrait;
 	use AhojPlatbyBaseModuleTrait;
 
+	public $api;
 	public $callback_url;
 	public $is17 = false;
 
@@ -68,7 +69,9 @@ class ahojplatby extends PaymentModule
 		if(version_compare(_PS_VERSION_, '1.7', '>='))
 		    $this->is17 = true;
 
-		$this->callback_url = $this->context->link->getModuleLink('ahojplatby', 'validation');
+		// $this->callback_url = $this->context->link->getModuleLink('ahojplatby', 'validation');
+
+		$this->api = new AhojApi();
 	}
 
 
@@ -130,15 +133,56 @@ class ahojplatby extends PaymentModule
 		return $this->render('hook', 'payment.tpl');
 	}
 
-	public function render($type = 'front', $template = 'file.tpl')
+	public function hookDisplayProductExtraContent($params)
+	{
+		$array = array();
+		$array[] = (new PrestaShop\PrestaShop\Core\Product\ProductExtraContent())
+			->setTitle('tittle')
+			->setContent('content');
+		return $array;
+
+		return 'ahojplatby hook product extra content';
+	}
+
+	public function hookDisplayProductAdditionalInfo($params)
 	{
 		if($this->is17)
 		{
-			return $this->display(__FILE__, 'views/templates/'.$type.'/1_7/'.$template);
+			$price = $params['product']->rounded_display_price;
 		}
 		else
 		{
-			return $this->display(__FILE__, 'views/templates/'.$type.'/1_6/'.$template);
+			$price = $params['product']->price;
+		}
+
+		$this->api->init();
+		$banner_data = $this->api->getProductData($price);
+
+		$this->smarty->assign(array(
+			'banner_data' => $banner_data
+		));
+
+		return $this->render('hook', 'product.tpl', true);
+	}
+
+	public function render($type = 'front', $template = 'file.tpl', $same_file = false)
+	{
+		if($same_file)
+		{
+			$ver = '/';
+		}
+		else
+		{
+			$ver = '/1_7/';
+		}
+
+		if($this->is17)
+		{
+			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
+		}
+		else
+		{
+			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
 		}
 	}
 	
