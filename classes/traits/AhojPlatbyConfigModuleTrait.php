@@ -152,6 +152,26 @@ trait AhojPlatbyConfigModuleTrait
 					),
 
 					array(
+						'type' => 'switch',
+						'label' => $this->l('Automatically redirect to pay gate'),
+						'name' => 'AHOJPLATBY_AUTOMATICALLY_REDIRECT',
+						'is_bool' => true,
+						'desc' => $this->l('Automatically redirect withou payment page'),
+						'values' => array(
+							array(
+								'id' => 'active_on',
+								'value' => true,
+								'label' => $this->l('Enabled')
+							),
+							array(
+								'id' => 'active_off',
+								'value' => false,
+								'label' => $this->l('Disabled')
+							)
+						),
+					),
+
+					array(
 						'type' => 'text',
 						'label' => $this->l('Business Place'),
 						'name' => 'AHOJPLATBY_BUSINESS_PLACE',
@@ -270,7 +290,7 @@ trait AhojPlatbyConfigModuleTrait
 			'AHOJPLATBY_ORDER_STATE_FAIL'    => Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'),
 			'AHOJPLATBY_ORDER_STATE_ERROR'    => Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR'),
 			'AHOJPLATBY_TEST_ENVIROMENT'    => Configuration::get('AHOJPLATBY_TEST_ENVIROMENT'),
-			
+			'AHOJPLATBY_AUTOMATICALLY_REDIRECT'    => Configuration::get('AHOJPLATBY_AUTOMATICALLY_REDIRECT'),
 		);
 	}
 

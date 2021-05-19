@@ -126,7 +126,6 @@ class ahojplatby extends PaymentModule
 
 		$this->smarty->assign(array(
 			'this_path' => $this->_path,
-			'this_path_cheque' => $this->_path,
 			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
 		));
 
@@ -162,7 +161,14 @@ class ahojplatby extends PaymentModule
 			'banner_data' => $banner_data
 		));
 
+
 		return $this->render('hook', 'product.tpl', true);
+	}
+
+
+	public function hookDisplayRightColumnProduct($params)
+	{
+		return $this->hookDisplayProductAdditionalInfo($params);
 	}
 
 	public function render($type = 'front', $template = 'file.tpl', $same_file = false)
@@ -173,8 +179,12 @@ class ahojplatby extends PaymentModule
 		}
 		else
 		{
-			$ver = '/1_7/';
+			if($this->is17)
+				$ver = '/1_7/';
+			else
+				$ver = '/1_6/';
 		}
+
 
 		if($this->is17)
 		{

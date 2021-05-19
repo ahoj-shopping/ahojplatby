@@ -11,7 +11,10 @@ class ParentController extends ModuleFrontController
 		}
 		else
 		{
-			$ver = '/1_7/';
+			if($this->module->is17)
+				$ver = '/1_7/';
+			else
+				$ver = '/1_6/';
 		}
 
 		if($this->module->is17)
@@ -20,7 +23,7 @@ class ParentController extends ModuleFrontController
 		}
 		else
 		{
-			return $this->setTemplate('views/templates/'.$front.$ver.$template);
+			$this->setTemplate($ver.$template);
 		}
 	}
 

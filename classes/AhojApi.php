@@ -232,7 +232,7 @@ class AhojApi
 
 	public function getSecurityToken($id_order, $action)
 	{
-		return Tools::hash($action.'_'.$id_order);
+		return Tools::encrypt($action.'_'.$id_order);
 	}
 
 }

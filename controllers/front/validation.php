@@ -2,6 +2,12 @@
 
 class AhojplatbyValidationModuleFrontController extends ParentController
 {
+	/** @var bool If false, does not build left page column content and hides it. */
+	public $display_column_left = false;
+
+	/** @var bool If false, does not build right page column content and hides it. */
+	public $display_column_right = false;
+	
 	public function initContent()
 	{
 		parent::initContent();
@@ -32,7 +38,7 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		//     'AHOJPLATBY_MODULE_DEBUG' => $debug,
 		// ));
 
-		// $this->setRenderTemplate('front', 'validation.tpl');
+		// $this->setRenderTemplate('front', 'validation.tpl', true);
 
 	}
 
@@ -59,19 +65,27 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		switch ($action) {
 			case AhojApi::SUCCESS:
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_OK');
-				$redirect_url = 'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$id_order.'&key='.$customer->secure_key;
+				$redirect_url_17 = 'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$id_order.'&key='.$customer->secure_key;
+				$redirect_url_16 = '';
 				break;
 			case AhojApi::FAIL:
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL');
-				$redirect_url = ''; // fail order
+				$redirect_url_17 = ''; // fail order
+				$redirect_url_16 = '';
+
 				break;
 			
 			default:
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR');
-				$redirect_url = ''; // fail order
+				$redirect_url_17 = ''; // fail order
+				$redirect_url_16 = '';
+
 				break;
 		}
 
+		// TODO 
+		// ak uz je stav nastaveny, tak nemenit
+		
 		$extra_vars = array();
 		// Set the order status
 		$new_history = new OrderHistory();
@@ -91,7 +105,15 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		// redirect to confirmation
 
 		// redirect to order-confirmation 1.7
-		Tools::redirect($redirect_url);
+		if($this->module->is17)
+			Tools::redirect($redirect_url_17);
+
+		// redirect to order-confirmation 1.6
+		if(!$this->module->is17)
+			// redirect to custom confirmation
+			Tools::redirect($redirect_url_16);
+
+
 	}
 
 }

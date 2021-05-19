@@ -2,9 +2,16 @@
 
 class AhojplatbyPaymentModuleFrontController extends ParentController
 {
+	/** @var bool If false, does not build left page column content and hides it. */
+	public $display_column_left = false;
+
+	/** @var bool If false, does not build right page column content and hides it. */
+	public $display_column_right = false;
+
 	public function initContent()
 	{
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
+		$auto_redirect = Configuration::get('AHOJPLATBY_AUTOMATICALLY_REDIRECT');
 
 		parent::initContent();
 
@@ -40,9 +47,12 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 		);
 
 		$this->module->api->init();
-		$this->module->api->setOrder(new Order(6)); // test order
+		$this->module->api->setOrder(new Order(5)); // test order
 		// $this->module->api->setOrder(new Order($this->module->currentOrder)); // test order
 		$response = $this->module->api->createApplication();
+
+		// TODO auto_redirect implement
+		// TODO payment.tpl confirmation redirect to gate 
 
 		if(!$debug)
 		{
@@ -56,7 +66,7 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 		    'data'	=>	$this->module->api->debug_data // debug_data
 		));
 
-		$this->setRenderTemplate('front', 'payment.tpl');
+		$this->setRenderTemplate('front', 'payment.tpl', true);
 
 	}
 	
