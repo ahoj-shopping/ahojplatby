@@ -43,22 +43,31 @@ class AhojApi
 
 	public function init()
 	{	
-		$mode = 'prod';
-		if($this->debug)
+
+		$test = Configuration::get('AHOJPLATBY_TEST_ENVIROMENT');
+		if($test)
 		{
 			$mode = 'test';
+			$business_place = 'TEST_ESHOP';
+			$eshop_key = '1111111111aaaaaaaaaa2222';
+		}
+		else
+		{
+			$mode = 'prod';
+			$business_place = Configuration::get('AHOJPLATBY_BUSINESS_PLACE');
+			$eshop_key = Configuration::get('AHOJPLATBY_API_KEY');
 		}
 
 		try {
 		     $this->ahojpay = new Ahoj\AhojPay(array(
 		         "mode" => $mode,
-		         "businessPlace" => Configuration::get('AHOJPLATBY_BUSINESS_PLACE'),
-		         "eshopKey" => Configuration::get('AHOJPLATBY_API_KEY'),
+		         "businessPlace" => $business_place,
+		         "eshopKey" => $eshop_key,
 		         "notificationCallbackUrl" => $this->callback_url,
 		     ));
 		} catch (PrestaShopException $e) {
 	  		// Error handling
-			$this->displayError($e->getMessage());
+			Tools::displayError($e->getMessage());
 		}
 	
 	}
@@ -80,10 +89,9 @@ class AhojApi
 	public function createApplication()
 	{
 		if(!$this->order)
-			$this->displayError('Order not set');
+			Tools::displayError('Order not set');
 
 		$response = array();
-
 		$customer = new Customer($this->order->id_customer);
 
 		$data = array(
@@ -91,10 +99,12 @@ class AhojApi
 			'completionUrl' => $this->success_url = $this->context->link->getModuleLink('ahojplatby', 'validation', array(
 				'action'	=>	self::SUCCESS,
 				'id_order'	=>	$this->order->id,
+				'token'		=>	$this->getSecurityToken($this->order->id, self::SUCCESS)
 			)),
 			'terminationUrl' => $this->fail_url = $this->context->link->getModuleLink('ahojplatby', 'validation', array(
 				'action'	=>	self::FAIL,
 				'id_order'	=>	$this->order->id,
+				'token'		=>	$this->getSecurityToken($this->order->id, self::FAIL)
 			)),
 			'eshopRegisteredCustomer' => $this->customer->isGuest(),
 			'customer'	=>	$this->getCustomerData(),
@@ -107,7 +117,7 @@ class AhojApi
 		     $response = $this->ahojpay->createApplication($data);
 		} catch (PrestaShopException $e) {
 			// Error handling
-			// $this->displayError($e->getMessage());
+			// Tools::displayError($e->getMessage());
 		}
 
 		if($this->debug)
@@ -216,13 +226,13 @@ class AhojApi
 	// 	     ));
 	// 	} catch (Exception $e) {
 	// 	   // Error handling
-	// 		$this->displayError($e->getMessage());
+	// 		Tools::displayError($e->getMessage());
 	// 	}
 	// }
 
-	public function displayError($error_msg = '')
+	public function getSecurityToken($id_order, $action)
 	{
-		return;
-		throw new PrestaShopException($error_msg);
+		return Tools::hash($action.'_'.$id_order);
 	}
+
 }

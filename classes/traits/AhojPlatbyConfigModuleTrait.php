@@ -130,6 +130,27 @@ trait AhojPlatbyConfigModuleTrait
 							)
 						),
 					),
+
+					array(
+						'type' => 'switch',
+						'label' => $this->l('Test login mode'),
+						'name' => 'AHOJPLATBY_TEST_ENVIROMENT',
+						'is_bool' => true,
+						'desc' => $this->l('Replce credentials to test enviroment'),
+						'values' => array(
+							array(
+								'id' => 'active_on',
+								'value' => true,
+								'label' => $this->l('Enabled')
+							),
+							array(
+								'id' => 'active_off',
+								'value' => false,
+								'label' => $this->l('Disabled')
+							)
+						),
+					),
+
 					array(
 						'type' => 'text',
 						'label' => $this->l('Business Place'),
@@ -248,7 +269,8 @@ trait AhojPlatbyConfigModuleTrait
 			'AHOJPLATBY_ORDER_STATE_OK'    => Configuration::get('AHOJPLATBY_ORDER_STATE_OK'),
 			'AHOJPLATBY_ORDER_STATE_FAIL'    => Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'),
 			'AHOJPLATBY_ORDER_STATE_ERROR'    => Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR'),
-
+			'AHOJPLATBY_TEST_ENVIROMENT'    => Configuration::get('AHOJPLATBY_TEST_ENVIROMENT'),
+			
 		);
 	}
 
