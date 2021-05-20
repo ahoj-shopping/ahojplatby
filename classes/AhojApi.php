@@ -80,6 +80,11 @@ class AhojApi
 		);
 	}
 
+	public function getInitJavascriptHtml()
+	{
+		return $this->ahojpay->generateInitJavaScriptHtml();
+	}
+
 	public function setOrder($order)
 	{
 		$this->order = $order;

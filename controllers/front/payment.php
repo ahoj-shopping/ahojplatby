@@ -51,23 +51,34 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 		// $this->module->api->setOrder(new Order($this->module->currentOrder)); // test order
 		$response = $this->module->api->createApplication();
 
-		// TODO auto_redirect implement
-		// TODO payment.tpl confirmation redirect to gate 
-
-		if(!$debug)
-		{
-			Tools::redirect($response['applicationUrl']);
-			return;
-		}
-
 		$this->context->smarty->assign(array(
+			'js_ahojpay_init'	=> $this->module->api->getInitJavascriptHtml(),
 		    'debug' => $debug,
 		    'response'	=>	$response,
 		    'data'	=>	$this->module->api->debug_data // debug_data
 		));
+		
+		// js var defines
+		Media::addJsDef(array(
+			'applicationUrl'	=>	$response['applicationUrl'],
+			'test'	=>	'test'
+		));
 
-		$this->setRenderTemplate('front', 'payment.tpl', true);
+		$this->setRenderTemplate('front', 'payment.tpl');
 
+	}
+	public function setMedia()
+	{
+		parent::setMedia();
+
+		if($this->module->is17)
+		{
+			$this->registerJavascript(
+				'module-'.$this->module->name.'-payment',
+				'modules/'.$this->module->name.'/views/js/ahojplatby.js'
+			);
+		}
+		
 	}
 	
 }
