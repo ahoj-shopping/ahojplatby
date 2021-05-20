@@ -78,6 +78,10 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 				'modules/'.$this->module->name.'/views/js/ahojplatby.js'
 			);
 		}
+		else
+		{
+			$this->addJs(_PS_MODULE_DIR_.''.$this->module->name.'/views/js/ahojplatby.js');
+		}
 		
 	}
 	
