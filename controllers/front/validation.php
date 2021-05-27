@@ -55,32 +55,53 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 			case AhojApi::SUCCESS:
 				// success order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_OK');
-				$redirect_url_17 = $this->context->link->getPageLink('order-confirmation', null, null, array(
+				$order_confirmation_url = $this->context->link->getPageLink('order-confirmation', null, null, array(
 					'id_cart'	=> $cart->id,
 					'id_module'	=> $this->module->id,
 					'id_order'	=> $id_order,
 					'key'	=>	$customer->secure_key
 				));
-				$redirect_url_16 = '';
+
+				// $redirect_url_17 = $this->context->link->getPageLink('order-confirmation', null, null, array(
+				// 	'id_cart'	=> $cart->id,
+				// 	'id_module'	=> $this->module->id,
+				// 	'id_order'	=> $id_order,
+				// 	'key'	=>	$customer->secure_key
+				// ));
+				// $redirect_url_16 = '';
+
+
 			break;
 			
 			case AhojApi::FAIL:
 				// fail order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL');
-				$redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
-					'id_order'	=>	$id_order
-				)); 
-				$redirect_url_16 = '';
+				$order_confirmation_url = $this->context->link->getPageLink('order-confirmation', null, null, array(
+					'id_cart'	=> $cart->id,
+					'id_module'	=> $this->module->id,
+					'id_order'	=> $id_order,
+					'key'	=>	$customer->secure_key
+				));
+				// $redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
+				// 	'id_order'	=>	$id_order
+				// )); 
+				// $redirect_url_16 = '';
 
 			break;
 
 			default:
 				// fail order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR');
-				$redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
-					'id_order'	=>	$id_order
-				));  
-				$redirect_url_16 = '';
+				$order_confirmation_url = $this->context->link->getPageLink('order-confirmation', null, null, array(
+					'id_cart'	=> $cart->id,
+					'id_module'	=> $this->module->id,
+					'id_order'	=> $id_order,
+					'key'	=>	$customer->secure_key
+				));
+				// $redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
+				// 	'id_order'	=>	$id_order
+				// ));  
+				// $redirect_url_16 = '';
 			break;
 		}
 
@@ -106,13 +127,15 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		// 	true
 		// );
 
-		// redirect to order-confirmation 1.7
-		if($this->module->is17)
-			Tools::redirect($redirect_url_17);
+		Tools::redirect($order_confirmation_url);
 
-		// redirect to order-confirmation 1.6
-		if(!$this->module->is17)
-			Tools::redirect($redirect_url_16);
+		// // redirect to order-confirmation 1.7
+		// if($this->module->is17)
+		// 	Tools::redirect($redirect_url_17);
+
+		// // redirect to order-confirmation 1.6
+		// if(!$this->module->is17)
+		// 	Tools::redirect($redirect_url_16);
 
 	}
 
