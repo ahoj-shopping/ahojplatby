@@ -25,17 +25,17 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 		$mailVars = array(
 			// '{bankwire_owner}' => Configuration::get('BANK_WIRE_OWNER'),
 		);
-		
-		// $this->module->validateOrder(
-		// 	$cart->id, 
-		// 	Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'), 
-		// 	$total, $this->module->displayName, 
-		// 	NULL, 
-		// 	$mailVars, 
-		// 	(int)$this->context->currency->id, 
-		// 	false, 
-		// 	$customer->secure_key
-		// );
+		$this->module->validateOrder(
+			$cart->id, 
+			Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'), 
+			$total, 
+			$this->module->displayName, 
+			NULL, 
+			$mailVars, 
+			(int)$this->context->currency->id, 
+			false, 
+			$customer->secure_key
+		);
 
 		PrestaShopLogger::addLog(
 			'Payment: add order '.$this->module->currentOrder,
@@ -46,11 +46,13 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 			true
 		);
 
+		// api 
 		$this->module->api->init();
-		$this->module->api->setOrder(new Order(5)); // test order
-		// $this->module->api->setOrder(new Order($this->module->currentOrder)); // test order
+		$this->module->api->setOrder(new Order(8)); // test order
+		$this->module->api->setOrder(new Order($this->module->currentOrder)); // test order
 		$response = $this->module->api->createApplication();
 
+		// smarty
 		$this->context->smarty->assign(array(
 			'js_ahojpay_init'	=> $this->module->api->getInitJavascriptHtml(),
 		    'debug' => $debug,
@@ -64,6 +66,7 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 			'test'	=>	'test'
 		));
 
+		// render
 		$this->setRenderTemplate('front', 'payment.tpl');
 
 	}

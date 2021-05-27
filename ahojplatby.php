@@ -44,7 +44,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.0.1';
+		$this->version = '1.0.2';
 		$this->author = 'bestuniverse.sk';
 		$this->need_instance = 1;
 
@@ -72,6 +72,7 @@ class ahojplatby extends PaymentModule
 		// $this->callback_url = $this->context->link->getModuleLink('ahojplatby', 'validation');
 
 		$this->api = new AhojApi();
+
 	}
 
 
@@ -130,6 +131,76 @@ class ahojplatby extends PaymentModule
 		));
 
 		return $this->render('hook', 'payment.tpl');
+	}
+
+	public function hookDisplayPaymentReturn($params)
+	{
+		// if (!$this->active || !Configuration::get(self::FLAG_DISPLAY_PAYMENT_INVITE)) {
+		// 	return;
+		// }
+
+		// $state = $params['order']->getCurrentState();
+		// if (
+		// 	in_array(
+		// 		$state,
+		// 		array(
+		// 			Configuration::get('PS_OS_BANKWIRE'),
+		// 			Configuration::get('PS_OS_OUTOFSTOCK'),
+		// 			Configuration::get('PS_OS_OUTOFSTOCK_UNPAID'),
+		// 		)
+		// 	)) {
+		// 	$bankwireOwner = $this->owner;
+		// 	if (!$bankwireOwner) {
+		// 		$bankwireOwner = '___________';
+		// 	}
+
+		// 	$bankwireDetails = Tools::nl2br($this->details);
+		// 	if (!$bankwireDetails) {
+		// 		$bankwireDetails = '___________';
+		// 	}
+
+		// 	$bankwireAddress = Tools::nl2br($this->address);
+		// 	if (!$bankwireAddress) {
+		// 		$bankwireAddress = '___________';
+		// 	}
+
+		// 	$totalToPaid = $params['order']->getOrdersTotalPaid() - $params['order']->getTotalPaid();
+		// 	$this->smarty->assign(array(
+		// 		'shop_name' => $this->context->shop->name,
+		// 		'total' => Tools::displayPrice(
+		// 			$totalToPaid,
+		// 			new Currency($params['order']->id_currency),
+		// 			false
+		// 		),
+		// 		'bankwireDetails' => $bankwireDetails,
+		// 		'bankwireAddress' => $bankwireAddress,
+		// 		'bankwireOwner' => $bankwireOwner,
+		// 		'status' => 'ok',
+		// 		'reference' => $params['order']->reference,
+		// 		'contact_url' => $this->context->link->getPageLink('contact', true)
+		// 	));
+		// } else {
+		// 	$this->smarty->assign(
+		// 		array(
+		// 			'status' => 'failed',
+		// 			'contact_url' => $this->context->link->getPageLink('contact', true),
+		// 		)
+		// 	);
+		// }
+
+		$this->smarty->assign(
+			array(
+				'status' => 'failed',
+				'contact_url' => $this->context->link->getPageLink('contact', true),
+			)
+		);
+
+		return $this->render('hook', 'payment_return.tpl', true);
+	}
+
+	public function hookDisplayOrderConfirmation($params)
+	{
+		return 'test hook orderConfirmation';
 	}
 
 	public function hookDisplayProductExtraContent($params)

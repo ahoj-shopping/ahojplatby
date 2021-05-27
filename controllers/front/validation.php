@@ -28,12 +28,6 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		$this->updateOrderState($id_order, $action);
 
 		die();
-		// $this->context->smarty->assign(array(
-		//     'AHOJPLATBY_MODULE_DEBUG' => $debug,
-		// ));
-
-		// $this->setRenderTemplate('front', 'validation.tpl');
-
 	}
 
 	public function updateOrderState($id_order, $action)
@@ -57,21 +51,35 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		$customer = new Customer($order->id_customer);
 
 		switch ($action) {
+			
 			case AhojApi::SUCCESS:
+				// success order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_OK');
-				$redirect_url_17 = 'index.php?controller=order-confirmation&id_cart='.$cart->id.'&id_module='.$this->module->id.'&id_order='.$id_order.'&key='.$customer->secure_key;
+				$redirect_url_17 = $this->context->link->getPageLink('order-confirmation', null, null, array(
+					'id_cart'	=> $cart->id,
+					'id_module'	=> $this->module->id,
+					'id_order'	=> $id_order,
+					'key'	=>	$customer->secure_key
+				));
 				$redirect_url_16 = '';
 			break;
+			
 			case AhojApi::FAIL:
+				// fail order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL');
-				$redirect_url_17 = ''; // fail order
+				$redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
+					'id_order'	=>	$id_order
+				)); 
 				$redirect_url_16 = '';
 
 			break;
 
 			default:
+				// fail order
 				$id_order_state = Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR');
-				$redirect_url_17 = ''; // fail order$redirect_url_16 = '';
+				$redirect_url_17 = $this->context->link->getModuleLink('ahojplatby', 'fail', array(
+					'id_order'	=>	$id_order
+				));  
 				$redirect_url_16 = '';
 			break;
 		}
@@ -79,34 +87,30 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		// TODO 
 		// ak uz je stav nastaveny, tak nemenit
 
-		$extra_vars = array();
-		// Set the order status
-		$new_history = new OrderHistory();
-		$new_history->id_order = (int) $order->id;
-		$new_history->changeIdOrderState((int) $id_order_state, $order, true);
-		$new_history->addWithemail(true, $extra_vars);
+		// Novy status sa tu nastavovat nebude.
+		// bude sa to nastavovat cisto len async
+		
+		// $extra_vars = array();
+		// // Set the order status
+		// $new_history = new OrderHistory();
+		// $new_history->id_order = (int) $order->id;
+		// $new_history->changeIdOrderState((int) $id_order_state, $order, true);
+		// $new_history->addWithemail(true, $extra_vars);
 
-		PrestaShopLogger::addLog(
-			'Validation: add new state '.$id_order_state,
-			1,
-			null,
-			$this->module->name,
-			$id_order,
-			true
-		);
-
-
-		dd(array(
-			$redirect_url
-		), true);
-		// redirect to confirmation
+		// PrestaShopLogger::addLog(
+		// 	'Validation: add new state '.$id_order_state,
+		// 	1,
+		// 	null,
+		// 	$this->module->name,
+		// 	$id_order,
+		// 	true
+		// );
 
 		// redirect to order-confirmation 1.7
 		if($this->module->is17)
 			Tools::redirect($redirect_url_17);
 
 		// redirect to order-confirmation 1.6
-		// redirect to custom confirmation
 		if(!$this->module->is17)
 			Tools::redirect($redirect_url_16);
 

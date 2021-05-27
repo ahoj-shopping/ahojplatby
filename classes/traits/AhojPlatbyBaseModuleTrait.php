@@ -39,14 +39,14 @@ trait AhojPlatbyBaseModuleTrait
 			return false;
 		}
 
-		Configuration::updateValue('BUCONNECTOR_LIVE_MODE', false);
-		Configuration::updateValue('BUCONNECTOR_RETURN_DAY_OFFSET', 14);
+		Configuration::updateValue('AHOJPLATBY_LIVE_MODE', false);
 
-		// Configuration::updateValue('BUCONNECTOR_TOKEN', "");
+		// Configuration::updateValue('AHOJPLATBY_TOKEN', "");
 
 		require(dirname(__FILE__).'/../../sql/install.php');
 
 		return parent::install() 
+		&& $this->addOrderStates()
 		&& $this->installHook()
 		// && $this->installTab()
 		/*&& AsdataGeisTabs::installTab($this)*/;
@@ -54,8 +54,8 @@ trait AhojPlatbyBaseModuleTrait
 
 	public function uninstall()
 	{
-		Configuration::deleteByName('BUCONNECTOR_LIVE_MODE');
-		// Configuration::deleteByName('BUCONNECTOR_TOKEN');
+		Configuration::deleteByName('AHOJPLATBY_LIVE_MODE');
+		// Configuration::deleteByName('AHOJPLATBY_TOKEN');
 
 		include(dirname(__FILE__).'/../../sql/uninstall.php');
 
@@ -66,8 +66,10 @@ trait AhojPlatbyBaseModuleTrait
 	{
 		// $this->registerHook('moduleRoutes');
 		$this->registerHook('payment');
-		$this->registerHook('paymentReturn');
 		$this->registerHook('paymentOptions');
+		$this->registerHook('displayPaymentReturn');
+		$this->registerHook('displayOrderConfirmation');
+		
 		// $this->registerHook('displayProductExtraContent');
 		$this->registerHook('displayProductAdditionalInfo');
 		$this->registerHook('displayRightColumnProduct');
@@ -140,5 +142,82 @@ trait AhojPlatbyBaseModuleTrait
 		return false;
 	}
 
+	public function addOrderStates()
+	{
+		// add order states
 
+		// 1. caka sa na potvrdenie platby AHOJ
+		// 2. platba ahoj prijata
+		// 3. platba ahoj zamietnuta
+		// 4. chyba paltby
+
+		$os = new OrderState();
+		$os->name = self::createMultiLangField('Awaiting payment AHOJ');
+		$os->send_email = false;
+		$os->module_name = $this->name;
+		$os->invoice = false;
+		$os->color = '#34209E';
+		$os->logable = false;
+		$os->shipped = false;
+		$os->unremovable = true;
+		$os->delivery = false;
+		$os->hidden = false;
+		$os->paid = false;
+		$os->pdf_delivery = false;
+		$os->pdf_invoice = false;
+		$os->deleted = false;
+		$os->add();
+		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_AWAITING', $os->id);
+
+		$os = new OrderState();
+		$os->name = self::createMultiLangField('Payment accepted AHOJ');
+		$os->send_email = false;
+		$os->module_name = $this->name;
+		$os->invoice = true;
+		$os->color = '#3498D8';
+		$os->logable = true;
+		$os->shipped = false;
+		$os->unremovable = true;
+		$os->delivery = false;
+		$os->hidden = false;
+		$os->paid = true;
+		$os->pdf_delivery = false;
+		$os->pdf_invoice = true;
+		$os->deleted = false;
+		$os->add();
+		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_OK', $os->id);
+
+		$os = new OrderState();
+		$os->name = self::createMultiLangField('Payment rejected AHOJ');
+		$os->send_email = false;
+		$os->module_name = $this->name;
+		$os->invoice = false;
+		$os->color = '#E74C3C';
+		$os->logable = false;
+		$os->shipped = false;
+		$os->unremovable = true;
+		$os->delivery = false;
+		$os->hidden = false;
+		$os->paid = false;
+		$os->pdf_delivery = false;
+		$os->pdf_invoice = false;
+		$os->deleted = false;
+		$os->add();
+		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_FAIL', $os->id);
+
+		// error id_order_state = 8
+		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_ERROR', 8);
+
+		return true;
+	}
+
+	/* Vytvorenie viacjazykovej polozky */
+	public static function createMultiLangField($field)
+	{
+		$languages = Language::getLanguages(false);
+		$res = array();
+		foreach ($languages AS $lang)
+			$res[$lang['id_lang']] = $field;
+		return $res;
+	}
 }
