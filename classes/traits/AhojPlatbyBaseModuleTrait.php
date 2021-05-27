@@ -151,60 +151,70 @@ trait AhojPlatbyBaseModuleTrait
 		// 3. platba ahoj zamietnuta
 		// 4. chyba paltby
 
-		$os = new OrderState();
-		$os->name = self::createMultiLangField('Awaiting payment AHOJ');
-		$os->send_email = false;
-		$os->module_name = $this->name;
-		$os->invoice = false;
-		$os->color = '#34209E';
-		$os->logable = false;
-		$os->shipped = false;
-		$os->unremovable = true;
-		$os->delivery = false;
-		$os->hidden = false;
-		$os->paid = false;
-		$os->pdf_delivery = false;
-		$os->pdf_invoice = false;
-		$os->deleted = false;
-		$os->add();
-		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_AWAITING', $os->id);
+		if(Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'))
+		{
+			$os = new OrderState();
+			$os->name = self::createMultiLangField('Awaiting payment AHOJ');
+			$os->send_email = false;
+			$os->module_name = $this->name;
+			$os->invoice = false;
+			$os->color = '#34209E';
+			$os->logable = false;
+			$os->shipped = false;
+			$os->unremovable = true;
+			$os->delivery = false;
+			$os->hidden = false;
+			$os->paid = false;
+			$os->pdf_delivery = false;
+			$os->pdf_invoice = false;
+			$os->deleted = false;
+			$os->add();
+			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_AWAITING', $os->id);
+		}
+		
 
-		$os = new OrderState();
-		$os->name = self::createMultiLangField('Payment accepted AHOJ');
-		$os->send_email = false;
-		$os->module_name = $this->name;
-		$os->invoice = true;
-		$os->color = '#3498D8';
-		$os->logable = true;
-		$os->shipped = false;
-		$os->unremovable = true;
-		$os->delivery = false;
-		$os->hidden = false;
-		$os->paid = true;
-		$os->pdf_delivery = false;
-		$os->pdf_invoice = true;
-		$os->deleted = false;
-		$os->add();
-		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_OK', $os->id);
-
-		$os = new OrderState();
-		$os->name = self::createMultiLangField('Payment rejected AHOJ');
-		$os->send_email = false;
-		$os->module_name = $this->name;
-		$os->invoice = false;
-		$os->color = '#E74C3C';
-		$os->logable = false;
-		$os->shipped = false;
-		$os->unremovable = true;
-		$os->delivery = false;
-		$os->hidden = false;
-		$os->paid = false;
-		$os->pdf_delivery = false;
-		$os->pdf_invoice = false;
-		$os->deleted = false;
-		$os->add();
-		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_FAIL', $os->id);
-
+		if(Configuration::get('AHOJPLATBY_ORDER_STATE_OK'))
+		{
+			$os = new OrderState();
+			$os->name = self::createMultiLangField('Payment accepted AHOJ');
+			$os->send_email = false;
+			$os->module_name = $this->name;
+			$os->invoice = true;
+			$os->color = '#3498D8';
+			$os->logable = true;
+			$os->shipped = false;
+			$os->unremovable = true;
+			$os->delivery = false;
+			$os->hidden = false;
+			$os->paid = true;
+			$os->pdf_delivery = false;
+			$os->pdf_invoice = true;
+			$os->deleted = false;
+			$os->add();
+			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_OK', $os->id);
+		}
+		
+		if(Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'))
+		{
+			$os = new OrderState();
+			$os->name = self::createMultiLangField('Payment rejected AHOJ');
+			$os->send_email = false;
+			$os->module_name = $this->name;
+			$os->invoice = false;
+			$os->color = '#E74C3C';
+			$os->logable = false;
+			$os->shipped = false;
+			$os->unremovable = true;
+			$os->delivery = false;
+			$os->hidden = false;
+			$os->paid = false;
+			$os->pdf_delivery = false;
+			$os->pdf_invoice = false;
+			$os->deleted = false;
+			$os->add();
+			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_FAIL', $os->id);
+		}
+		
 		// error id_order_state = 8
 		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_ERROR', 8);
 
