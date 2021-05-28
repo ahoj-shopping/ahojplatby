@@ -48,8 +48,8 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 
 		// api 
 		$this->module->api->init();
-		$this->module->api->setOrder(new Order(8)); // test order
-		$this->module->api->setOrder(new Order($this->module->currentOrder)); // test order
+		// $this->module->api->setOrder(new Order(8)); // test order
+		$this->module->api->setOrder(new Order($this->module->currentOrder));
 		$response = $this->module->api->createApplication();
 
 		// smarty
