@@ -232,7 +232,6 @@ class ahojplatby extends PaymentModule
 			'banner_data' => $banner_data
 		));
 
-
 		return $this->render('hook', 'product.tpl', true);
 	}
 

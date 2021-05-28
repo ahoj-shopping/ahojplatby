@@ -3,9 +3,9 @@
 {if $banner_data}
 
 	{* javascript include *}
-	{$banner_data[0] nofilter}
+	{$banner_data.js nofilter}
 
 	{* banner *}
-	{$banner_data[1] nofilter}
+	{$banner_data.html_banner nofilter}
 
 {/if}

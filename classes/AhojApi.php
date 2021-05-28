@@ -45,6 +45,8 @@ class AhojApi
 	{	
 
 		$test = Configuration::get('AHOJPLATBY_TEST_ENVIROMENT');
+		$business_place = false;
+		$eshop_key = false;
 		if($test)
 		{
 			$mode = 'test';
@@ -58,6 +60,10 @@ class AhojApi
 			$eshop_key = Configuration::get('AHOJPLATBY_API_KEY');
 		}
 
+		if(!$business_place || !$eshop_key)
+		{
+			return false;
+		}
 		try {
 		     $this->ahojpay = new Ahoj\AhojPay(array(
 		         "mode" => $mode,
@@ -73,10 +79,13 @@ class AhojApi
 	}
 
 	public function getProductData($price = 0)
-	{
+	{	
+		if(!isset($this->ahojpay) || !$this->ahojpay)
+			return array();
+
 		return array(
-			$this->ahojpay->generateInitJavaScriptHtml(),
-			$this->ahojpay->generateProductBannerHtml($price)
+			'js' => $this->ahojpay->generateInitJavaScriptHtml(),
+			'html_banner' => $this->ahojpay->generateProductBannerHtml($price)
 		);
 	}
 
@@ -113,7 +122,7 @@ class AhojApi
 			)),
 			'eshopRegisteredCustomer' => $this->customer->isGuest(),
 			'customer'	=>	$this->getCustomerData(),
-			'product'	=>	$this->getProductsData()
+			'product'	=>	$this->getOrderListData()
 		);
 
 
@@ -152,9 +161,8 @@ class AhojApi
 		);
 	}
 
-	public function getProductsData()
+	public function getOrderListData()
 	{
-		
 		return array(
 			'goods'	=>	$this->getList(),
 			'goodsDeliveryCosts' => round($this->order->total_shipping_tax_incl, 2)

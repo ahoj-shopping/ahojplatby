@@ -9,6 +9,12 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 	// 2. SIGNED - ziadost podpisana klientom - OK
 	// 3. CANCELED - ziadost bola zrusena - FAIL
 	// 4. DELETED - ziadost bola zmazana na zakalade internych procesov - FAIL
+	// not used
+	// 5. CREATED
+	// 6. DRAFT
+	// 7. APPROVED
+	// 7. ACTIVE
+
 
 	public function initContent()
 	{
@@ -31,6 +37,9 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 
 			// get id_order_state by state 
 			switch ($data['state']) {
+				case 'CREATED':
+				case 'APPROVED':
+				case 'ACTIVE':
 				case 'DRAFT':
 				case 'SENT':
 					$id_order_state = 0;
