@@ -151,25 +151,25 @@ trait AhojPlatbyConfigModuleTrait
 						),
 					),
 
-					array(
-						'type' => 'switch',
-						'label' => $this->l('Automatically redirect to pay gate'),
-						'name' => 'AHOJPLATBY_AUTOMATICALLY_REDIRECT',
-						'is_bool' => true,
-						'desc' => $this->l('Automatically redirect withou payment page'),
-						'values' => array(
-							array(
-								'id' => 'active_on',
-								'value' => true,
-								'label' => $this->l('Enabled')
-							),
-							array(
-								'id' => 'active_off',
-								'value' => false,
-								'label' => $this->l('Disabled')
-							)
-						),
-					),
+					// array(
+					// 	'type' => 'switch',
+					// 	'label' => $this->l('Automatically redirect to pay gate'),
+					// 	'name' => 'AHOJPLATBY_AUTOMATICALLY_REDIRECT',
+					// 	'is_bool' => true,
+					// 	'desc' => $this->l('Automatically redirect without payment page'),
+					// 	'values' => array(
+					// 		array(
+					// 			'id' => 'active_on',
+					// 			'value' => true,
+					// 			'label' => $this->l('Enabled')
+					// 		),
+					// 		array(
+					// 			'id' => 'active_off',
+					// 			'value' => false,
+					// 			'label' => $this->l('Disabled')
+					// 		)
+					// 	),
+					// ),
 
 					array(
 						'type' => 'text',
