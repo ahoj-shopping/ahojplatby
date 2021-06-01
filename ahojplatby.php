@@ -44,7 +44,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.0.2';
+		$this->version = '1.0.3';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -102,16 +102,24 @@ class ahojplatby extends PaymentModule
 		if (!$this->active) {
 			return;
 		}
+		
+		$total = (float)$this->context->cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
 
-		// $this->smarty->assign(array(
-		// ));
+		$this->api->init();
+		$promotion_info = $this->api->getPromotionInfo();
+		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
+
+		$this->smarty->assign(array(
+			'promotion_info' => $promotion_info,
+			'description' => $description,
+		));
 
 		$newOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
 		$newOption->setModuleName($this->name)
-			->setCallToActionText($this->l('Ahoj platby'))
+			->setCallToActionText('Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní')
 			->setAction($this->context->link->getModuleLink($this->name, 'payment', array(), true))
-			->setAdditionalInformation($this->l('Ahoj platby addintional information'));
-			// ->setAdditionalInformation($this->fetch('module:ps_wirepayment/views/templates/hook/ps_wirepayment_intro.tpl'));
+			// ->setAdditionalInformation($this->l('Ahoj platby addintional information'));
+			->setAdditionalInformation($this->fetch('module:ahojplatby/views/templates/hook/payment_description.tpl'));
 
 		$payment_options = [
 			$newOption,

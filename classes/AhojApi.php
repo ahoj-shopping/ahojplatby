@@ -243,6 +243,26 @@ class AhojApi
 	// 	}
 	// }
 
+	public function getPromotionInfo()
+	{
+		try {
+		     $response = $this->ahojpay->getPromotionInfo();
+		} catch (PrestaShopException $e) {
+			// Error handling
+			// Tools::displayError($e->getMessage());
+		}
+
+		return $response;
+	}
+
+	public function generatePaymentMethodDescriptionHtml($total = 0)
+	{
+		return array(
+			'js' => $this->ahojpay->generateInitJavaScriptHtml(),
+			'html_description' => $this->ahojpay->generatePaymentMethodDescriptionHtml($total)
+		);
+	}
+
 	public function getSecurityToken($id_order, $action)
 	{
 		return Tools::encrypt($action.'_'.$id_order);

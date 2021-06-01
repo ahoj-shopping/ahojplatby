@@ -151,7 +151,7 @@ trait AhojPlatbyBaseModuleTrait
 		// 3. platba ahoj zamietnuta
 		// 4. chyba paltby
 
-		if(Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'))
+		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'))
 		{
 			$os = new OrderState();
 			$os->name = self::createMultiLangField('Awaiting payment AHOJ');
@@ -169,11 +169,12 @@ trait AhojPlatbyBaseModuleTrait
 			$os->pdf_invoice = false;
 			$os->deleted = false;
 			$os->add();
+
 			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_AWAITING', $os->id);
 		}
 		
 
-		if(Configuration::get('AHOJPLATBY_ORDER_STATE_OK'))
+		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_OK'))
 		{
 			$os = new OrderState();
 			$os->name = self::createMultiLangField('Payment accepted AHOJ');
@@ -194,7 +195,7 @@ trait AhojPlatbyBaseModuleTrait
 			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_OK', $os->id);
 		}
 		
-		if(Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'))
+		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'))
 		{
 			$os = new OrderState();
 			$os->name = self::createMultiLangField('Payment rejected AHOJ');
