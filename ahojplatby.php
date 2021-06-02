@@ -152,6 +152,7 @@ class ahojplatby extends PaymentModule
 		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
 
 		$this->smarty->assign(array(
+			'payment_module_name' => 'Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní',
 			'promotion_info' => $promotion_info,
 			'description' => $description,
 			'this_path' => $this->_path,

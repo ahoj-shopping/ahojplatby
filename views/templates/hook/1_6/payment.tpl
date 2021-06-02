@@ -19,7 +19,7 @@
 			</a> *}
 
 			<div class="ahojplatby" title="{l s='Ahoj platby' mod='ahojplatby'}">
-				{l s='Ahoj platby' mod='ahojplatby'} 
+				{$payment_module_name}
 				<span>{include file="../payment_description.tpl"}</span>
 			</div>
 		</div>
