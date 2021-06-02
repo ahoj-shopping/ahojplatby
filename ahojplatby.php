@@ -103,9 +103,15 @@ class ahojplatby extends PaymentModule
 			return;
 		}
 		
+		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
 
-		$this->api->init();
+		$is_available = $this->api->isAvailableForTotalPrice($total);
+		if(!$is_available)
+		{
+			return false;
+		}
+
 		$promotion_info = $this->api->getPromotionInfo();
 		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
 
@@ -133,7 +139,21 @@ class ahojplatby extends PaymentModule
 		if (!$this->active)
 			return;
 
+		$this->api->init();
+		$total = (float)$this->context->cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
+
+		$is_available = $this->api->isAvailableForTotalPrice($total);
+		if(!$is_available)
+		{
+			return false;
+		}
+
+		$promotion_info = $this->api->getPromotionInfo();
+		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
+
 		$this->smarty->assign(array(
+			'promotion_info' => $promotion_info,
+			'description' => $description,
 			'this_path' => $this->_path,
 			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
 		));
@@ -234,6 +254,12 @@ class ahojplatby extends PaymentModule
 		}
 
 		$this->api->init();
+		$is_available = $this->api->isAvailableForItemPrice($price);
+		if(!$is_available)
+		{
+			return false;
+		}
+
 		$banner_data = $this->api->getProductData($price);
 
 		$this->smarty->assign(array(
