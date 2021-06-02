@@ -25,3 +25,38 @@
 * Don't forget to prefix your containers with your own identifier
 * to avoid any conflicts with others containers.
 */
+
+div.payment_module {
+	margin-bottom: 10px; }
+	div.payment_module div.ahojplatby  {
+		display: block;
+		border: 1px solid #d6d4d4;
+		-moz-border-radius: 4px;
+		-webkit-border-radius: 4px;
+		border-radius: 4px;
+		font-size: 17px;
+		line-height: 23px;
+		color: #333;
+		font-weight: bold;
+		padding: 33px 40px 34px 99px;
+		letter-spacing: -1px;
+		position: relative; 
+		background: url("../../img/ahojplatby.png") 15px 12px no-repeat #fbfbfb; }
+
+		div.payment_module div.ahojplatby:after {
+			display: block;
+			content: "\f054";
+			position: absolute;
+			right: 15px;
+			margin-top: -11px;
+			top: 50%;
+			font-family: "FontAwesome";
+			font-size: 25px;
+			height: 22px;
+			width: 14px;
+			color: #777; }
+			div.payment_module div:hover {
+				background-color: #f6f6f6; }
+				p.payment_module a span {
+					font-weight: bold;
+					color: #777; }

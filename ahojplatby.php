@@ -92,8 +92,8 @@ class ahojplatby extends PaymentModule
 
 	public function hookDisplayHeader()
 	{ 
-		// $this->context->controller->addCSS($this->_path.'views/css/buconnector.css');
-		// $this->context->controller->addJS($this->_path.'views/js/buconnector.js');
+		$this->context->controller->addCSS($this->_path.'views/css/ahojplatby.css');
+		// $this->context->controller->addJS($this->_path.'views/js/ahojplatby.js');
         // $this->context->controller->addJS($this->_path.'js/nivo-slider/jquery.nivo.slider.js');
 	}
 
@@ -249,8 +249,9 @@ class ahojplatby extends PaymentModule
 			$price = $params['product']->rounded_display_price;
 		}
 		else
-		{
-			$price = $params['product']->price;
+		{	
+			$product = new Product(Tools::getValue('id_product'));
+			$price = round($product->price, 2);
 		}
 
 		$this->api->init();
