@@ -71,6 +71,7 @@ trait AhojPlatbyBaseModuleTrait
 		$this->registerHook('displayOrderConfirmation');
 		
 		// $this->registerHook('displayProductExtraContent');
+		$this->registerHook('displayHeader');
 		$this->registerHook('displayProductAdditionalInfo');
 		$this->registerHook('displayRightColumnProduct');
 

@@ -18,7 +18,7 @@
 				
 			</a> *}
 
-			<div class="ahojplatby" title="{l s='Ahoj platby' mod='ahojplatby'}">
+			<div class="ahojplatby" data-href="{$link->getModuleLink('ahojplatby', 'payment')|escape:'html':'UTF-8'}" title="{l s='Ahoj platby' mod='ahojplatby'}">
 				{$payment_module_name}
 				<span>{include file="../payment_description.tpl"}</span>
 			</div>
@@ -27,3 +27,12 @@
 	</div>
 </div>
 
+<script type="text/javascript">
+	$(document).on('click', '.payment_module .ahojplatby', function() {
+		console.log($(this).data('href'));
+		if($(this).data('href'))
+		{
+		    window.location = $(this).data('href');
+		}
+	});
+</script>
