@@ -28,11 +28,13 @@
 </div>
 
 <script type="text/javascript">
-	$(document).on('click', '.payment_module .ahojplatby', function() {
-		console.log($(this).data('href'));
+	$(document).on('click', '.payment_module .ahojplatby', function(e) {
 		if($(this).data('href'))
 		{
 		    window.location = $(this).data('href');
 		}
+	});
+	$(document).on('click', '.payment_module .ahojplatby a', function(e) {
+		e.stopPropagation();
 	});
 </script>
