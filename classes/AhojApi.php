@@ -125,10 +125,6 @@ class AhojApi
 			'product'	=>	$this->getOrderListData()
 		);
 
-		dd(array(
-			$data
-		), true);
-
 		try {
 			$response = $this->ahojpay->createApplication($data);
 		} catch (PrestaShopException $e) {
