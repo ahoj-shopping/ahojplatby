@@ -125,7 +125,9 @@ class AhojApi
 			'product'	=>	$this->getOrderListData()
 		);
 
-
+		dd(array(
+			$data
+		), true);
 
 		try {
 			$response = $this->ahojpay->createApplication($data);
@@ -179,7 +181,7 @@ class AhojApi
 			foreach ($list as $key => $value) {
 				$data[] = array(
 					'name' => $value['product_name'],
-					'price' => round($value['product_price'], 2),
+					'price' => round($value['unit_price_tax_incl'], 2),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
 					// 'additionalServices' => array(
