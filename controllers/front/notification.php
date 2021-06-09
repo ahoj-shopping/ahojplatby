@@ -19,22 +19,11 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 	public function initContent()
 	{
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
-		if($debug)
-		{
-			PrestaShopLogger::addLog(
-				'Notification: init',
-				1,
-				null,
-				$this->module->name,
-				0,
-				true
-			);
-		}
-		
+
 		// get http body
 		$data = (array) json_decode(file_get_contents('php://input'), true);
 
-		if(isset($data) && $data['orderNumber'] && $data['state'])
+		if(isset($data) && isset($data['orderNumber']) && $data['orderNumber'] && isset($data['state']) && $data['state'])
 		{
 
 			PrestaShopLogger::addLog(
@@ -85,7 +74,7 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 					Tools::jsonEncode(array(
 						'status'	=>	false,
 						'error'		=>	'Skip add order_state'
-					);)
+					))
 				);
 			}
 
@@ -130,10 +119,15 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 
 				$result = array(
 					'status'	=>	false,
-					'error'	=>	$this->l('Bad orderNumber')
+					'error'	=>	$this->module->l('Bad orderNumber')
 				);
 			}
 
+		} else {
+			$result = array(
+				'status'	=>	false,
+				'error'	=>	$this->module->l('Payload missing')
+			);
 		}
 
 		die(
