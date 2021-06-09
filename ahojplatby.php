@@ -224,12 +224,12 @@ class ahojplatby extends PaymentModule
 			)
 		);
 
-		return $this->render('hook', 'payment_return.tpl', true);
+		return $this->render('hook', 'payment_return.tpl');
 	}
 
 	public function hookDisplayOrderConfirmation($params)
 	{
-		return 'test hook orderConfirmation';
+		// return 'test hook orderConfirmation';
 	}
 
 	public function hookDisplayProductExtraContent($params)
