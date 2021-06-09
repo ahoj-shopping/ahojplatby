@@ -19,7 +19,18 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 	public function initContent()
 	{
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
-
+		if($debug)
+		{
+			PrestaShopLogger::addLog(
+				'Notification: init',
+				1,
+				null,
+				$this->module->name,
+				0,
+				true
+			);
+		}
+		
 		// get http body
 		$data = (array) json_decode(file_get_contents('php://input'), true);
 
