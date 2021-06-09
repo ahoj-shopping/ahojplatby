@@ -219,7 +219,7 @@ class ahojplatby extends PaymentModule
 
 		$this->smarty->assign(
 			array(
-				'status' => 'failed',
+				'status' => Tools::getValue('status'),
 				'contact_url' => $this->context->link->getPageLink('contact', true),
 			)
 		);
