@@ -19,6 +19,7 @@
 
 {if $status == 'ok'}
     <p>
+
       {l s='PLATBA SCHVÁLENÁ' mod='ahojplatby'}<br/>
     </p>
 

@@ -155,7 +155,7 @@ trait AhojPlatbyBaseModuleTrait
 		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'))
 		{
 			$os = new OrderState();
-			$os->name = self::createMultiLangField('Awaiting payment AHOJ');
+			$os->name = self::createMultiLangField('Čaká sa na Ahoj platbu, objednávku ešte nevybavujte');
 			$os->send_email = false;
 			$os->module_name = $this->name;
 			$os->invoice = false;
@@ -178,7 +178,7 @@ trait AhojPlatbyBaseModuleTrait
 		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_OK'))
 		{
 			$os = new OrderState();
-			$os->name = self::createMultiLangField('Payment accepted AHOJ');
+			$os->name = self::createMultiLangField('Ahoj platba bola schválená, môžete expedovať tovar');
 			$os->send_email = false;
 			$os->module_name = $this->name;
 			$os->invoice = true;
@@ -199,7 +199,7 @@ trait AhojPlatbyBaseModuleTrait
 		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_FAIL'))
 		{
 			$os = new OrderState();
-			$os->name = self::createMultiLangField('Payment rejected AHOJ');
+			$os->name = self::createMultiLangField('Ahoj platba bola zamietnutá, zrušte objednávku');
 			$os->send_email = false;
 			$os->module_name = $this->name;
 			$os->invoice = false;

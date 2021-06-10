@@ -46,7 +46,10 @@ trait AhojPlatbyConfigModuleTrait
 			'id_language' => $this->context->language->id,
 		);
 
-		return $helper->generateForm(array($this->getConfigForm()));
+		return $helper->generateForm(array(
+			$this->getConfigForm(),
+			$this->getConfigOrderStatesForm(),
+		));
 	}
 
 	/**
@@ -55,46 +58,16 @@ trait AhojPlatbyConfigModuleTrait
 	protected function getConfigForm()
 	{
 
-		// $payment_modules_list = Module::getPaymentModules();
-		// $payment_options = array();
-		// $payment_options[] = array(
-		// 	'id_option' => null,
-		// 	'name'      => "Choose COD payment",
-		// );
-
-		// foreach ($payment_modules_list as $pm) {
-
-		// 	$payment_options[] = array(
-		// 		'id_option' => $pm['name'],
-		// 		'name'      => $pm['name'],
-		// 	);
-
-		// }
-
-		$order_states = OrderState::getOrderStates($this->context->language->id);
-		$order_state_options = array();
-		$order_state_options[] = array(
-			'id' => null,
-			'name'      => $this->l('Vyberte stav objednavky'),
-		);
-
-		foreach ($order_states as $key => $value) {
-			$order_state_options[] = array(
-				'id'	=>	$value['id_order_state'],
-				'name'	=>	$value['name']
-			);
-		}
-
 		return array(
 			'form' => array(
 				'legend' => array(
-					'title' => $this->l('Settings'),
+					'title' => $this->l('Základne nastavenie'),
 					'icon' => 'icon-cogs',
 				),
 				'input' => array(
 					array(
 						'type' => 'switch',
-						'label' => $this->l('Live mode'),
+						'label' => $this->l('Produkčné prostredie'),
 						'name' => 'AHOJPLATBY_LIVE_MODE',
 						'is_bool' => true,
 						'desc' => $this->l('Use this module in live mode'),
@@ -113,7 +86,7 @@ trait AhojPlatbyConfigModuleTrait
 					),
 					array(
 						'type' => 'switch',
-						'label' => $this->l('Debug mode'),
+						'label' => $this->l('Testovacie prostredie'),
 						'name' => 'AHOJPLATBY_MODULE_DEBUG',
 						'is_bool' => true,
 						'desc' => $this->l('Use this module in debug mode'),
@@ -133,7 +106,7 @@ trait AhojPlatbyConfigModuleTrait
 
 					array(
 						'type' => 'switch',
-						'label' => $this->l('Test login mode'),
+						'label' => $this->l('Použiť test prihlasovacie údaje'),
 						'name' => 'AHOJPLATBY_TEST_ENVIROMENT',
 						'is_bool' => true,
 						'desc' => $this->l('Replce credentials to test enviroment'),
@@ -173,23 +146,66 @@ trait AhojPlatbyConfigModuleTrait
 
 					array(
 						'type' => 'text',
-						'label' => $this->l('Business Place'),
+						'label' => $this->l('Číslo obchodného miesta'),
 						'name' => 'AHOJPLATBY_BUSINESS_PLACE',
 						'is_bool' => true,
 						'desc' => $this->l('ahoj platby business place'),
 					),
 					array(
 						'type' => 'text',
-						'label' => $this->l('API key'),
+						'label' => $this->l('Bezpečnostný kľúč'),
 						'name' => 'AHOJPLATBY_API_KEY',
 						'is_bool' => true,
-						'desc' => $this->l('ahoj platby api key'),
+						'desc' => $this->l('Bude zaslaný emailom po úspešnom teste) (k testu viesť, získate po prihlásení do testovacieho Ahoj portálu)'),
+					),
+				),
+				'submit' => array(
+					'title' => $this->l('Save'),
+				),
+			),
+		);
+	}
+
+	/**
+	 * Create the structure of your form.
+	 */
+	protected function getConfigOrderStatesForm()
+	{
+
+		$order_states = OrderState::getOrderStates($this->context->language->id);
+		$order_state_options = array();
+		$order_state_options[] = array(
+			'id' => null,
+			'name'      => $this->l('Vyberte si stav objednávky'),
+		);
+
+		foreach ($order_states as $key => $value) {
+			$order_state_options[] = array(
+				'id'	=>	$value['id_order_state'],
+				'name'	=>	$value['name']
+			);
+		}
+
+		return array(
+			'form' => array(
+				'legend' => array(
+					'title' => $this->l('Mapovanie stavov objednávky'),
+					'icon' => 'icon-cogs',
+				),
+				'input' => array(
+					
+					array(
+						'type' => 'alert.info',
+						'col' => 12,
+						'label' => false,
+						'name' => 'AHOJPLATBY_ORDER_STATE_FREE_TXT',
+						'value'	=> $this->l('Namapujte si stavy platby na stavy objednávok Vášho eshopu.')
 					),
 
 					array(
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_AWAITING',
-						'label' => $this->l('Caka sa na platbu'),
+						'label' => $this->l('Spracováva sa Ahoj platba'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -200,7 +216,7 @@ trait AhojPlatbyConfigModuleTrait
 					array(
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_OK',
-						'label' => $this->l('Platba prijata'),
+						'label' => $this->l('Schválená Ahoj platba'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -211,7 +227,7 @@ trait AhojPlatbyConfigModuleTrait
 					array(
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_FAIL',
-						'label' => $this->l('Platba zamietnuta'),
+						'label' => $this->l('Zamietnutá Ahoj platba'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -222,51 +238,13 @@ trait AhojPlatbyConfigModuleTrait
 					array(
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_ERROR',
-						'label' => $this->l('Chyba API platby'),
+						'label' => $this->l('Chyba Ahoj platby'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
 							'name' => 'name'
 						)
 					),
-
-					// array(
-					// 	'type' => 'switch',
-					// 	'label' => $this->l('Google API translate'),
-					// 	'name' => 'AHOJPLATBY_TRANSLATE_ENABLE',
-					// 	'is_bool' => true,
-					// 	'desc' => $this->l('pouzivat preklad z eng do sk cez api'),
-					// 	'values' => array(
-					// 		array(
-					// 			'id' => 'active_on',
-					// 			'value' => true,
-					// 			'label' => $this->l('Enabled')
-					// 		),
-					// 		array(
-					// 			'id' => 'active_off',
-					// 			'value' => false,
-					// 			'label' => $this->l('Disabled')
-					// 		)
-					// 	),
-					// ),
-					// array(
-					// 	'type' => 'text',
-					// 	'label' => $this->l('Globalna marza'),
-					// 	'name' => 'AHOJPLATBY_GLOBAL_MARGIN',
-					// 	'is_bool' => true,
-					// 	'desc' => $this->l('globalna marza nasobitel (napr "1.5" je cena x 1.5)'),
-					// ),
-
-					// array(
-					// 	'type' => 'select',
-					// 	'name' => 'GEIS_COD_PAYMENT_MODULE',
-					// 	'label' => $this->l('COD payment module'),
-					// 	'options' => array(
-					// 		'query' => $payment_options,
-					// 		'id' => 'id_option',
-					// 		'name' => 'name'
-					// 	)
-					// ),
 				),
 				'submit' => array(
 					'title' => $this->l('Save'),
