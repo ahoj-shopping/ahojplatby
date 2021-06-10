@@ -216,10 +216,28 @@ trait AhojPlatbyBaseModuleTrait
 			$os->add();
 			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_FAIL', $os->id);
 		}
-		
-		// error id_order_state = 8
-		Configuration::updateValue('AHOJPLATBY_ORDER_STATE_ERROR', 8);
 
+		if(!Configuration::get('AHOJPLATBY_ORDER_STATE_ERROR'))
+		{
+			$os = new OrderState();
+			$os->name = self::createMultiLangField('Pri Ahoj platbe nastala chyba, objednávku zrušte');
+			$os->send_email = false;
+			$os->module_name = $this->name;
+			$os->invoice = false;
+			$os->color = '#E74C3C';
+			$os->logable = false;
+			$os->shipped = false;
+			$os->unremovable = true;
+			$os->delivery = false;
+			$os->hidden = false;
+			$os->paid = false;
+			$os->pdf_delivery = false;
+			$os->pdf_invoice = false;
+			$os->deleted = false;
+			$os->add();
+			Configuration::updateValue('AHOJPLATBY_ORDER_STATE_ERROR', $os->id);
+		}
+		
 		return true;
 	}
 
