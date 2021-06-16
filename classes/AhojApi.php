@@ -135,6 +135,9 @@ class AhojApi
 		if($this->debug)
 			$this->debug_data = $data;
 
+		dd(array(
+			$data
+		), true);
 		return $response;
 	}
 
@@ -162,6 +165,8 @@ class AhojApi
 	public function getOrderListData()
 	{
 		return array(
+			// 'goodsDeliveryTypeText' => 'local_pickup',
+			// 'goodsDeliveryAddress' => externa balikova sluzba, dodacia adresa,
 			'goods'	=>	$this->getList(),
 			'goodsDeliveryCosts' => round($this->order->total_shipping_tax_incl, 2)
 		);
@@ -180,6 +185,15 @@ class AhojApi
 					'price' => round($value['unit_price_tax_incl'], 2),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
+					'typeText'	=> 'goods',
+					'codeText'	=> array_filter(array(
+						$value['product_ean13'],
+						$value['product_reference'],
+						$value['product_isbn'],
+						$value['product_upc']
+					)),
+					'nonMaterial' => AhojApi::isVritualProduct($value['product_id']),
+					'commodityText' => AhojApi::getProductCategories($value['product_id'])
 					// 'additionalServices' => array(
 					// 	array(
 					// 		'id' => '9876543210',
@@ -290,4 +304,29 @@ class AhojApi
 		return Tools::encrypt($action.'_'.$id_order);
 	}
 
+	public static function isVritualProduct($id_product = false)
+	{
+		if(!$id_product)
+			return false;
+
+		$sql = 'SELECT is_virtual FROM '._DB_PREFIX_.'product WHERE id_product = '.$id_product;
+		$is_virtual =  Db::getInstance()->getValue($sql);
+		if($is_virtual)
+			return true;
+		else
+			return false;
+	}
+
+	public static function getProductCategories($id_product = false)
+	{
+		if(!$id_product)
+			return array();
+		$categories = Product::getProductCategoriesFull($id_product);
+		$result = array();
+		foreach ($categories as $key => $value) {
+			$result[] = $value['name'];
+		}
+
+		return $result;
+	}
 }
