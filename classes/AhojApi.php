@@ -8,6 +8,7 @@ class AhojApi
 	public $success_url;
 	public $fail_url;
 
+	public $module;
 	public $context;
 	public $order;
 	public $customer;
@@ -19,8 +20,9 @@ class AhojApi
 	const SUCCESS = 'success';
 	const FAIL = 'fail';
 
-	function __construct()
+	function __construct($module)
 	{
+		$this->module = $module;
 		$this->context = Context::getContext();
 		
 		$this->callback_url = $this->context->link->getModuleLink('ahojplatby', 'notification');
@@ -135,9 +137,7 @@ class AhojApi
 		if($this->debug)
 			$this->debug_data = $data;
 
-		dd(array(
-			$data
-		), true);
+		
 		return $response;
 	}
 
@@ -168,7 +168,7 @@ class AhojApi
 			// 'goodsDeliveryTypeText' => 'local_pickup',
 			// 'goodsDeliveryAddress' => externa balikova sluzba, dodacia adresa,
 			'goods'	=>	$this->getList(),
-			'goodsDeliveryCosts' => round($this->order->total_shipping_tax_incl, 2)
+			'goodsDeliveryCosts' => AhojApi::formatPrice($this->order->total_shipping_tax_incl)
 		);
 	}
 
@@ -182,7 +182,7 @@ class AhojApi
 			foreach ($list as $key => $value) {
 				$data[] = array(
 					'name' => $value['product_name'],
-					'price' => round($value['unit_price_tax_incl'], 2),
+					'price' => AhojApi::formatPrice($value['unit_price_tax_incl']),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
 					'typeText'	=> 'goods',
@@ -203,7 +203,26 @@ class AhojApi
 					// )
 				);
 			}
+
+			// add discount as item row
+			if($this->order->total_discounts > 0)
+			{	
+				
+				$order_cart_rules = AhojApi::getCartRules($this->order->id);
+				$cart_rules_codes = AhojApi::formatOrderCartRulesCodes($order_cart_rules);
+
+				$data[] = array(
+					'name' => $this->module->l('Zľavový kupón'),
+					'price' => -1 * AhojApi::formatPrice($this->order->total_discounts),
+					'id' => 'discount',
+					'count' => 1,
+					'typeText'	=> 'discount',
+					'codeText'	=> $cart_rules_codes,
+					'nonMaterial' => true
+				);
+			}
 		}
+		
 		return $data;
 	}
 
@@ -328,5 +347,35 @@ class AhojApi
 		}
 
 		return $result;
+	}
+
+	public static function getCartRules($id_order)
+	{
+		$sql = 'SELECT ocr.*, cr.code
+			    FROM ' . _DB_PREFIX_ . 'order_cart_rule ocr
+			    LEFT JOIN '._DB_PREFIX_.'cart_rule cr
+			    	ON (cr.id_cart_rule = ocr.id_cart_rule)
+			    WHERE ocr.`deleted` = 0 
+			    	AND ocr.`id_order` = ' . (int) $id_order;
+	    return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+	}
+
+	public static function formatOrderCartRulesCodes($order_cart_rules)
+	{
+		$result = array();
+		if($order_cart_rules)
+		{
+			foreach ($order_cart_rules as $key => $value) {
+				$result[] = $value['code'];
+			}
+		}
+
+		return array_filter($result);
+	}
+
+	public static function formatPrice($price)
+	{
+		$price = round($price, 2);
+		return number_format((float)$price, 2, '.', '');  // Outputs -> 105.00
 	}
 }
