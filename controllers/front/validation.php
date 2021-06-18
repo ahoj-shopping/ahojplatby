@@ -59,7 +59,8 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 					'id_cart'	=> $cart->id,
 					'id_module'	=> $this->module->id,
 					'id_order'	=> $id_order,
-					'key'	=>	$customer->secure_key
+					'key'	=>	$customer->secure_key,
+					'status'	=>	'ok'
 				));
 
 				// $redirect_url_17 = $this->context->link->getPageLink('order-confirmation', null, null, array(
