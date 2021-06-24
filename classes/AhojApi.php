@@ -127,6 +127,10 @@ class AhojApi
 			'product'	=>	$this->getOrderListData()
 		);
 
+		dd(array(
+			$data
+		), true);
+
 		try {
 			$response = $this->ahojpay->createApplication($data);
 		} catch (PrestaShopException $e) {
@@ -164,12 +168,18 @@ class AhojApi
 
 	public function getOrderListData()
 	{
-		return array(
-			// 'goodsDeliveryTypeText' => 'local_pickup',
-			// 'goodsDeliveryAddress' => externa balikova sluzba, dodacia adresa,
+		$data = array();
+		
+		$res = $this->getExtCarrier();
+		$data = array_merge($data, $res);
+
+		$res =  array(
 			'goods'	=>	$this->getList(),
 			'goodsDeliveryCosts' => AhojApi::formatPrice($this->order->total_shipping_tax_incl)
 		);
+		$data = array_merge($data, $res);
+
+		return $data;
 	}
 
 	public function getList()
@@ -224,6 +234,73 @@ class AhojApi
 		}
 		
 		return $data;
+	}
+
+	public function getExtCarrier()
+	{
+		// zasielkovna v2.1.6 ps1.7
+		// zasielkovna v2.0.5 ps1.6
+		// shaim dpdparcelshop
+		// easybalikomat v1.10
+
+		$data = false;
+
+		/* zasielkovna */
+		if($this->module->is17)
+			$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder($this->order->id);
+		else
+			$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder16($this->order->id);
+
+		if($data)
+		{
+			$result = $this->formatExtCarrier('Zaielkovna', $data);
+		}
+		/* zasielkovna end */
+
+		/* dpd */
+		$data = DpdAdapterClass::getCarrierOrderByIdCart($this->order->id_cart);
+		if($data)
+		{
+			$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+		}
+		/* dpd end */
+
+
+		/* balikomat */
+		$data = BalikomatAdapterClass::getCarrierOrderByIdOrder($this->order->id);
+		if($data)
+		{
+			$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+		}
+		/* balikomat end */
+
+
+		return $result;
+	}
+
+	public function formatExtCarrier($carrier_name, $data)
+	{	
+		if($data)
+		{
+			return array(
+				'goodsDeliveryTypeText' => $carrier_name,
+				'goodsDeliveryAddress' => array(
+					'name' => $data['name'],
+					'street' => $data['street'],
+					'registerNumber' => '',
+					'referenceNumber' => '',
+					'city' => $data['city'],
+					'zipCode' => $data['zip'],
+					'country' => $data['country'],
+				),
+			);
+		}
+		else
+		{
+			return array();
+		}
+		
+
 	}
 
 	// public function getRedirectUrl()

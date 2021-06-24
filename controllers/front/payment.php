@@ -25,6 +25,7 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 		$mailVars = array(
 			// '{bankwire_owner}' => Configuration::get('BANK_WIRE_OWNER'),
 		);
+
 		$this->module->validateOrder(
 			$cart->id, 
 			Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'), 
@@ -48,7 +49,7 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 
 		// api 
 		$this->module->api->init();
-		// $this->module->api->setOrder(new Order(8)); // test order
+		// $this->module->api->setOrder(new Order(16)); // test order
 		$this->module->api->setOrder(new Order($this->module->currentOrder));
 		$response = $this->module->api->createApplication();
 
