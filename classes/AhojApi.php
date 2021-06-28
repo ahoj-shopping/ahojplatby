@@ -243,34 +243,42 @@ class AhojApi
 		$data = false;
 
 		/* zasielkovna */
-		if($this->module->is17)
-			$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder($this->order->id);
-		else
-			$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder16($this->order->id);
-
-		if($data)
+		if(Module::isInstalled('packetery'))
 		{
-			$result = $this->formatExtCarrier('Zaielkovna', $data);
+			if($this->module->is17)
+				$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder($this->order->id);
+			else
+				$data = ZasielkovnaAdapterClass::getCarrierOrderByIdOrder16($this->order->id);
+
+			if($data)
+			{
+				$result = $this->formatExtCarrier('Zaielkovna', $data);
+			}			
 		}
 		/* zasielkovna end */
 
 		/* dpd */
-		$data = DpdAdapterClass::getCarrierOrderByIdCart($this->order->id_cart);
-		if($data)
+		if(Module::isInstalled('shaim_dpdparcelshop'))
 		{
-			$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+			$data = DpdAdapterClass::getCarrierOrderByIdCart($this->order->id_cart);
+			if($data)
+			{
+				$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+			}
 		}
 		/* dpd end */
 
 
 		/* balikomat */
-		$data = BalikomatAdapterClass::getCarrierOrderByIdOrder($this->order->id);
-		if($data)
+		if(Module::isInstalled('easybalikomat'))
 		{
-			$result = $this->formatExtCarrier('Balikomat', $data);
+			$data = BalikomatAdapterClass::getCarrierOrderByIdOrder($this->order->id);
+			if($data)
+			{
+				$result = $this->formatExtCarrier('Balikomat', $data);
+			}
 		}
 		/* balikomat end */
-
 
 		return $result;
 	}
