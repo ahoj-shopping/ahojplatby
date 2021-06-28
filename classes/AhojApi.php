@@ -127,10 +127,6 @@ class AhojApi
 			'product'	=>	$this->getOrderListData()
 		);
 
-		dd(array(
-			$data
-		), true);
-
 		try {
 			$response = $this->ahojpay->createApplication($data);
 		} catch (PrestaShopException $e) {
@@ -270,7 +266,7 @@ class AhojApi
 		$data = BalikomatAdapterClass::getCarrierOrderByIdOrder($this->order->id);
 		if($data)
 		{
-			$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+			$result = $this->formatExtCarrier('Balikomat', $data);
 		}
 		/* balikomat end */
 
