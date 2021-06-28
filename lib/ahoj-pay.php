@@ -536,7 +536,7 @@ class AhojPay
         if (array_key_exists('goodsDeliveryAddress', $applicationRequest['product'])) {
             if (array_key_exists('country', $applicationRequest['product']['goodsDeliveryAddress'])) {
                 $applicationRequest['product']['goodsDeliveryAddress']['country'] = array(
-                    'code' => $applicationRequest['product']['goodsDeliveryAddress']['country'],
+                    'code' => strtoupper($applicationRequest['product']['goodsDeliveryAddress']['country']),
                 );
             }
         } else {
