@@ -52,6 +52,7 @@ class AhojApi
 		if($test)
 		{
 			$mode = 'test';
+			// $mode = 'dev';
 			$business_place = 'TEST_ESHOP';
 			$eshop_key = '1111111111aaaaaaaaaa2222';
 		}
