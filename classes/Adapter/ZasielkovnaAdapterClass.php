@@ -32,6 +32,19 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 				FROM '._DB_PREFIX_.'packetery_order po
 				WHERE po.id_order = '.$id_order.'
 					AND po.is_carrier = 0';
-		return Db::getInstance()->getRow($sql);
+		$row =  Db::getInstance()->getRow($sql);
+
+		$city = substr($row, 0, strpos($row, ','));
+		$street = substr($row,strpos($row, ','));
+		$street = substr($street, 2);
+
+		$result = array(
+			'name'	=>	$row['name'],
+			'city'	=>	$city,
+			'street'	=>	$street,
+			'currency'	=>	$row['currency']
+		);
+
+		return $result;
 	}
 }

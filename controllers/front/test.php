@@ -12,23 +12,43 @@ class AhojplatbyTestModuleFrontController extends ParentController
 	{
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
 		$auto_redirect = Configuration::get('AHOJPLATBY_AUTOMATICALLY_REDIRECT');
+		$id_order = Tools::getValue('id_order');
+		$order = New Order($id_order);
+		$cart = new Cart($order->id_cart);
+
+		parent::initContent();
+
+		$customer = new Customer($cart->id_customer);
+		if (!Validate::isLoadedObject($customer))
+			Tools::redirect('index.php?controller=order&step=1');
+
+		// add order
+		$total = (float)$cart->getOrderTotal(true, Cart::BOTH);
 
 		// api 
 		$this->module->api->init();
-		$response = $this->module->api->generatePaymentMethodDescriptionHtml(35);
+		$this->module->api->setOrder(new Order($id_order)); // test order
+		$response = $this->module->api->createApplication();
 
 		// smarty
 		$this->context->smarty->assign(array(
+			'js_ahojpay_init'	=> $this->module->api->getInitJavascriptHtml(),
 		    'debug' => $debug,
 		    'response'	=>	$response,
 		    'data'	=>	$this->module->api->debug_data // debug_data
 		));
 		
+		// js var defines
+		Media::addJsDef(array(
+			'applicationUrl'	=>	$response['applicationUrl'],
+			'test'	=>	'test'
+		));
 
 		// render
-		$this->setRenderTemplate('front', 'test.tpl', true);
+		$this->setRenderTemplate('front', 'payment.tpl');
 
 	}
+
 	public function setMedia()
 	{
 		parent::setMedia();

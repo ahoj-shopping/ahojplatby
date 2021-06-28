@@ -126,7 +126,7 @@ class AhojApi
 			'eshopRegisteredCustomer' => $this->customer->isGuest(),
 			'customer'	=>	$this->getCustomerData(),
 			'product'	=>	$this->getOrderListData()
-		);
+		);	
 
 		try {
 			$response = $this->ahojpay->createApplication($data);
@@ -241,6 +241,7 @@ class AhojApi
 		// easybalikomat v1.10
 
 		$data = false;
+		$result = false;
 
 		/* zasielkovna */
 		if(Module::isInstalled('packetery'))
