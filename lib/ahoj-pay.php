@@ -2,22 +2,26 @@
 
 namespace Ahoj;
 
-require_once "ahoj-api-repository.php";
-require_once "ahoj-exceptions.php";
+require_once 'ahoj-api-repository.php';
+require_once 'ahoj-exceptions.php';
 
 class AhojPay
 {
-    const VERSION = "0.1";
-    const JS_PLUGIN_SCRIPT_URL = "https://eshop.test.psws.xyz/merchant/plugin/ahojpay.js";
+    const VERSION = '0.1';
+    const PRODUCT_TYPE_CODE = 'GOODS_DEFERRED_PAYMENT';
 
-    const PRODUCT_TYPE_CODE = "GOODS_DEFERRED_PAYMENT";
-
-    const PRODUCT_BANNER_CSS_CLASS = "ahojpay-product-banner";
-    const PAYMENT_METHOD_DESC_CSS_CLASS = "ahojpay-payment-method-description";
+    const PRODUCT_BANNER_CSS_CLASS = 'ahojpay-product-banner';
+    const PAYMENT_METHOD_DESC_CSS_CLASS = 'ahojpay-payment-method-description';
 
     protected $promotionInfo = null;
     protected $repository;
     protected $config;
+
+    private $jsPluginScriptSrcMap = array(
+        'dev' => 'https://eshop.test.psws.xyz/merchant/plugin/ahojpay.js',
+        'test' => 'https://eshop.pilot.ahojsplatky.sk/merchant/plugin/ahojpay.js',
+        'prod' => 'https://eshop.ahojsplatky.sk/merchant/plugin/ahojpay.js',
+    );
 
     /**
      * Priklad pouzitia:
@@ -48,10 +52,7 @@ class AhojPay
     {
         $this->validateConfig($config);
         $this->config = $config;
-        $this->repository = new AhojApiRepository(
-            $config["eshopKey"],
-            $config["mode"]
-        );
+        $this->repository = new AhojApiRepository($config['eshopKey'], $config['mode']);
         try {
             $this->promotionInfo = $this->getPromotionInfo();
         } catch (ApiErrorException $apiException) {
@@ -90,6 +91,16 @@ class AhojPay
      *              )
      *          ),
      *          "product" => array(
+     *              "goodsDeliveryTypeText" => "local_pickup",
+     *              "goodsDeliveryAddress" => array(
+     *                  "name" => "Domov",
+     *                  "street" => "Hviezdolavova",
+     *                  "registerNumber" => "3",
+     *                  "referenceNumber" => "538/A",
+     *                  "city" => "Mestečko",
+     *                  "zipCode" => "98765",
+     *                  "country" => "SK"
+     *              ),
      *              "goods" => array(
      *                  array(
      *                      "name" => "Bicykel",
@@ -102,7 +113,17 @@ class AhojPay
      *                              "name" => "Poistenie",
      *                              "price" => 9.99
      *                          )
-     *                      )
+     *                      ),
+     *                      "typeText" => "goods",
+     *                      "codeText" => array(
+     *                          "8584027341404",
+     *                          "444312312444",
+     *                      ),
+     *                      "nonMaterial" => false,
+     *                      "commodityText" => array(
+     *                          "bicykel",
+     *                          "elektro bicykel"
+     *                      ),
      *                  )
      *              ),
      *              "goodsDeliveryCosts" => 3.5
@@ -129,58 +150,38 @@ class AhojPay
         $this->checkAvailabilityAndThrow();
         $this->validateApplicationParameters($applicationParameters);
 
-        $applicationRequest = $applicationParameters;
-
-        if (!empty($this->config["notificationCallbackUrl"])) {
-            $applicationRequest["notificationCallbackUrl"] =
-                $this->config["notificationCallbackUrl"];
-        }
-        $applicationRequest["product"]["promotion"] = array(
-            "code" => $this->promotionInfo["code"],
-        );
-        $applicationRequest["businessPlace"] = $this->config["businessPlace"];
-        // By default is this ESHOP. Should be configurable in future versions od AhojPay service
-        $applicationRequest["salesChannel"] = "ESHOP";
-        $applicationRequest["state"] = "DRAFT";
-
-        // always SK - integration manual
-        $applicationRequest["customer"]["permanentAddress"]["country"] = array(
-            "code" => "SK",
-        );
+        $applicationRequest = $this->prepareCreateApplicationParams($applicationParameters);
 
         $totalOrderPrice = $this->calculateTotalOrderPrice($applicationRequest);
         if (
-            $totalOrderPrice < $this->promotionInfo["minGoodsPrice"] ||
-            $totalOrderPrice > $this->promotionInfo["maxGoodsPrice"]
+            $totalOrderPrice < $this->promotionInfo['minGoodsPrice'] ||
+            $totalOrderPrice > $this->promotionInfo['maxGoodsPrice']
         ) {
             throw new TotalPriceExceedsLimitsException();
         }
 
         $response = $this->repository->httpPostApplication($applicationRequest);
-        $responseBody = $response["body"];
-        $responseCode = $response["code"];
+        $responseBody = $response['body'];
+        $responseCode = $response['code'];
 
         if ($responseCode == 400) {
-            throw new InvalidArgumentException($responseBody["message"]);
+            throw new InvalidArgumentException($responseBody['message']);
         }
 
         if ($responseCode > 200) {
             throw new ApiErrorException($responseBody, $responseCode);
         }
 
-        $contractNumber = $responseBody["contractNumber"];
+        $contractNumber = $responseBody['contractNumber'];
 
         return array(
-            "applicationUrl" => $this->getApplicationUrl(
+            'applicationUrl' => $this->getApplicationUrl(
                 $contractNumber,
-                isset($applicationRequest["completionUrl"])
-                    ? $applicationRequest["completionUrl"]
-                    : null,
-                isset($applicationRequest["terminationUrl"])
-                    ? $applicationRequest["terminationUrl"]
-                    : null
+                isset($applicationRequest['completionUrl']) ? $applicationRequest['completionUrl'] : null,
+                isset($applicationRequest['terminationUrl']) ? $applicationRequest['terminationUrl'] : null
             ),
-            "contractNumber" => $contractNumber,
+            'contractNumber' => $contractNumber,
+            'applicationInfo' => $responseBody,
         );
     }
 
@@ -196,27 +197,19 @@ class AhojPay
      * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
      * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
      */
-    function getApplicationUrl(
-        $contractNumber,
-        $completionUrl = null,
-        $terminationUrl = null
-    ) {
+    function getApplicationUrl($contractNumber, $completionUrl = null, $terminationUrl = null)
+    {
         $this->checkAvailabilityAndThrow();
 
-        $response = $this->repository->httpGetApplicationUrl(
-            $contractNumber,
-            array(
-                "completionUrl" => $completionUrl,
-                "earlyTerminationUrl" => $terminationUrl,
-            )
-        );
-        $responseBody = $response["body"];
-        $responseCode = $response["code"];
+        $response = $this->repository->httpGetApplicationUrl($contractNumber, array(
+            'completionUrl' => $completionUrl,
+            'earlyTerminationUrl' => $terminationUrl,
+        ));
+        $responseBody = $response['body'];
+        $responseCode = $response['code'];
 
         if ($responseCode == 404) {
-            throw new ContractNotExistException(
-                "Ziadost s cislom \"$contractNumber\" neexistuje"
-            );
+            throw new ContractNotExistException("Ziadost s cislom \"$contractNumber\" neexistuje");
         }
 
         if ($responseCode > 200) {
@@ -248,20 +241,18 @@ class AhojPay
     function getApplicationState($contractNumber)
     {
         $response = $this->repository->httpGetApplicationInfo($contractNumber);
-        $responseBody = $response["body"];
-        $responseCode = $response["code"];
+        $responseBody = $response['body'];
+        $responseCode = $response['code'];
 
         if ($responseCode == 404) {
-            throw new ContractNotExistException(
-                "Ziadost s cislom \"$contractNumber\" neexistuje"
-            );
+            throw new ContractNotExistException("Ziadost s cislom \"$contractNumber\" neexistuje");
         }
 
         if ($responseCode > 200) {
             throw new ApiErrorException($responseBody, $responseCode);
         }
 
-        return $responseBody["state"];
+        return $responseBody['state'];
     }
 
     /**
@@ -294,11 +285,9 @@ class AhojPay
             return $this->promotionInfo;
         }
 
-        $response = $this->repository->httpGetPromotions(
-            $this->config["businessPlace"]
-        );
-        $responseBody = $response["body"];
-        $responseCode = $response["code"];
+        $response = $this->repository->httpGetPromotions($this->config['businessPlace']);
+        $responseBody = $response['body'];
+        $responseCode = $response['code'];
 
         if ($responseCode > 200) {
             throw new ApiErrorException($responseBody, $responseCode);
@@ -307,24 +296,17 @@ class AhojPay
         $promotionInfo = null;
 
         foreach ($responseBody as $promotion) {
-            if (
-                $promotion["productType"] &&
-                $promotion["productType"]["code"] == self::PRODUCT_TYPE_CODE
-            ) {
+            if ($promotion['productType'] && $promotion['productType']['code'] == self::PRODUCT_TYPE_CODE) {
                 $promotionInfo = array(
-                    "code" => $promotion["code"],
-                    "name" => $promotion["name"],
-                    "description" => $promotion["description"],
-                    "instalmentIntervalDays" =>
-                        $promotion["instalmentIntervalDays"],
-                    "minGoodsPrice" => $promotion["minGoodsPrice"],
-                    "minGoodsItemPrice" => $promotion["minGoodsItemPrice"],
-                    "maxGoodsPrice" => $promotion["maxGoodsPrice"],
-                    "maxGoodsPriceProspect" =>
-                        $promotion["maxGoodsPriceProspect"],
-                    "interest" => array_key_exists("interest", $promotion)
-                        ? $promotion["interest"]
-                        : 0,
+                    'code' => $promotion['code'],
+                    'name' => $promotion['name'],
+                    'description' => $promotion['description'],
+                    'instalmentIntervalDays' => $promotion['instalmentIntervalDays'],
+                    'minGoodsPrice' => $promotion['minGoodsPrice'],
+                    'minGoodsItemPrice' => $promotion['minGoodsItemPrice'],
+                    'maxGoodsPrice' => $promotion['maxGoodsPrice'],
+                    'maxGoodsPriceProspect' => $promotion['maxGoodsPriceProspect'],
+                    'interest' => array_key_exists('interest', $promotion) ? $promotion['interest'] : 0,
                 );
             }
         }
@@ -350,11 +332,12 @@ class AhojPay
      *
      * @param string $scriptUrl Cesta k JS scriptu. Pre testovacie ucely
      */
-    function generateInitJavaScriptHtml($scriptUrl = self::JS_PLUGIN_SCRIPT_URL)
+    function generateInitJavaScriptHtml($scriptUrl = null)
     {
         $jsPromotionInfoStr = json_encode($this->promotionInfo);
+        $scriptUrl = isset($scriptUrl) ? $scriptUrl : $this->getJsScriptUrl();
 
-        $html = "";
+        $html = '';
         $html .= "<script type=\"text/javascript\" src=\"$scriptUrl\"></script>\n";
         $html .= "<script type=\"text/javascript\">\n";
         $html .= "(function() {\n";
@@ -385,10 +368,8 @@ class AhojPay
      *
      * @return string vygenerovaný HTML kód s obsahom mini banera
      */
-    function generateProductBannerHtml(
-        $goodsAndServicesPrice,
-        $cssClass = self::PRODUCT_BANNER_CSS_CLASS
-    ) {
+    function generateProductBannerHtml($goodsAndServicesPrice, $cssClass = self::PRODUCT_BANNER_CSS_CLASS)
+    {
         $html = "<div class=\"$cssClass\"></div>\n";
         $html .= "<script type=\"text/javascript\">\n";
         $html .= "(function() {\n";
@@ -417,10 +398,8 @@ class AhojPay
      *
      * @return string vygenerovaný HTML kód s obsahom popisu platobnej metódy
      */
-    function generatePaymentMethodDescriptionHtml(
-        $price,
-        $cssClass = self::PAYMENT_METHOD_DESC_CSS_CLASS
-    ) {
+    function generatePaymentMethodDescriptionHtml($price, $cssClass = self::PAYMENT_METHOD_DESC_CSS_CLASS)
+    {
         $html = "<div class=\"$cssClass\"></div>\n";
         $html .= "<script type=\"text/javascript\">\n";
         $html .= "(function() {\n";
@@ -451,17 +430,15 @@ class AhojPay
      * @throws Ahoj\ProductNotAvailableException V pripade, ze sluzba AhojPay nie je aktivna pre zadany businessPlace.
      * @throws Ahoj\ApiErrorException V pripade, ze niektore volanie na server neskonci uspesne. Napriklad InternalServerError
      */
-    function generateApplicationIframeOnLoadHtml(
-        $applicationParameters,
-        $delay = 0
-    ) {
+    function generateApplicationIframeOnLoadHtml($applicationParameters, $delay = 0)
+    {
         $delay = is_numeric($delay) ? $delay : 0;
         $applicationResult = $this->createApplication($applicationParameters);
 
         if (empty($applicationResult)) {
-            return "";
+            return '';
         }
-        $applicationUrl = $applicationResult["applicationUrl"];
+        $applicationUrl = $applicationResult['applicationUrl'];
 
         $html = "<script type=\"text/javascript\">\n";
         $html .= "(function() {\n";
@@ -479,6 +456,18 @@ class AhojPay
      */
 
     /**
+     * Vrati src JS scriptu nutneho pre vykreslovanie product bannera + payment method descr
+     */
+    function getJsScriptUrl()
+    {
+        $mode = $this->config['mode'];
+        if (array_key_exists($mode, $this->jsPluginScriptSrcMap)) {
+            return $this->jsPluginScriptSrcMap[$mode];
+        }
+        return $this->jsPluginScriptSrcMap['prod'];
+    }
+
+    /**
      * Vrati true ak je sluzba AhojPay dostupna
      */
     function isAvailable()
@@ -493,8 +482,8 @@ class AhojPay
     function isAvailableForTotalPrice($totalPrice)
     {
         return $this->isAvailable() &&
-            $this->promotionInfo["minGoodsPrice"] <= $totalPrice &&
-            $this->promotionInfo["maxGoodsPrice"] >= $totalPrice;
+            $this->promotionInfo['minGoodsPrice'] <= $totalPrice &&
+            $this->promotionInfo['maxGoodsPrice'] >= $totalPrice;
     }
 
     /**
@@ -505,8 +494,8 @@ class AhojPay
     function isAvailableForItemPrice($productPrice)
     {
         return $this->isAvailable() &&
-            $this->promotionInfo["minGoodsItemPrice"] <= $productPrice &&
-            $this->promotionInfo["maxGoodsPrice"] >= $productPrice;
+            $this->promotionInfo['minGoodsItemPrice'] <= $productPrice &&
+            $this->promotionInfo['maxGoodsPrice'] >= $productPrice;
     }
 
     /**
@@ -516,21 +505,70 @@ class AhojPay
     /**
      * private
      */
+    private function prepareCreateApplicationParams($applicationParameters)
+    {
+        $applicationRequest = $applicationParameters;
+
+        if (!empty($this->config['notificationCallbackUrl'])) {
+            $applicationRequest['notificationCallbackUrl'] = $this->config['notificationCallbackUrl'];
+        }
+        $applicationRequest['product']['promotion'] = array(
+            'code' => $this->promotionInfo['code'],
+        );
+        $applicationRequest['businessPlace'] = $this->config['businessPlace'];
+        // By default is this ESHOP. Should be configurable in future versions od AhojPay service
+        $applicationRequest['salesChannel'] = 'ESHOP';
+        $applicationRequest['state'] = 'DRAFT';
+
+        // always SK - integration manual
+        $applicationRequest['customer']['permanentAddress']['country'] = array(
+            'code' => 'SK',
+        );
+
+        if (array_key_exists('phone', $applicationRequest['customer']['contactInfo'])) {
+            $applicationRequest['customer']['contactInfo']['phone'] = $this->normalizePhoneNumber(
+                $applicationRequest['customer']['contactInfo']['phone']
+            );
+        }
+
+        // delivery address
+        $permanentAddress = $applicationRequest['customer']['permanentAddress'];
+        if (array_key_exists('goodsDeliveryAddress', $applicationRequest['product'])) {
+            if (array_key_exists('country', $applicationRequest['product']['goodsDeliveryAddress'])) {
+                $applicationRequest['product']['goodsDeliveryAddress']['country'] = array(
+                    'code' => $applicationRequest['product']['goodsDeliveryAddress']['country'],
+                );
+            }
+        } else {
+            $applicationRequest['product']['goodsDeliveryAddress'] = $permanentAddress;
+        }
+
+        // convert goods -> codeText and commodityText to string
+        foreach ($applicationRequest['product']['goods'] as &$good) {
+            if (array_key_exists('codeText', $good) && is_array($good['codeText'])) {
+                $good['codeText'] = implode(';', $good['codeText']);
+            }
+            if (array_key_exists('commodityText', $good) && is_array($good['commodityText'])) {
+                $good['commodityText'] = implode(';', $good['commodityText']);
+            }
+        }
+
+        return $applicationRequest;
+    }
+
     private function validateConfig($config)
     {
-        $requiredConfigKeys = array(
-            "mode",
-            "businessPlace",
-            "eshopKey",
-            "notificationCallbackUrl",
-        );
+        $requiredConfigKeys = array('mode', 'businessPlace', 'eshopKey', 'notificationCallbackUrl');
+        $possibleModes = array('prod', 'test', 'dev');
 
         foreach ($requiredConfigKeys as $configKey) {
             if (empty($config[$configKey]) || !is_string($config[$configKey])) {
-                throw new InvalidArgumentException(
-                    "$configKey je povinny udaj"
-                );
+                throw new InvalidArgumentException("$configKey je povinny udaj");
             }
+        }
+
+        if (!in_array($config['mode'], $possibleModes)) {
+            throw new InvalidArgumentException('Povolene hodnoty pre config mode su: ' . implode(',', $possibleModes));
         }
     }
 
@@ -540,8 +578,8 @@ class AhojPay
             return $default;
         }
 
-        if (strpos($key, ".") !== false) {
-            $keys = explode(".", $key);
+        if (strpos($key, '.') !== false) {
+            $keys = explode('.', $key);
             foreach ($keys as $innerKey) {
                 if (!array_key_exists($innerKey, $data)) {
                     return $default;
@@ -557,21 +595,20 @@ class AhojPay
     {
         $totalPrice = 0.0;
 
-        foreach ($applicationParameters["product"]["goods"] as $good) {
-            $amountOfGood = $good["count"] >= 1 ? $good["count"] : 1;
-            $totalPrice += $amountOfGood * $good["price"];
+        foreach ($applicationParameters['product']['goods'] as $good) {
+            $amountOfGood = $good['count'] >= 1 ? $good['count'] : 1;
+            $totalPrice += $amountOfGood * $good['price'];
 
-            if (isset($good["additionalServices"])) {
-                foreach ($good["additionalServices"] as $additionalService) {
-                    $totalPrice += $additionalService["price"];
+            if (isset($good['additionalServices'])) {
+                foreach ($good['additionalServices'] as $additionalService) {
+                    $totalPrice += $additionalService['price'];
                 }
             }
         }
 
         // add delivery costs
-        if (isset($applicationParameters["product"]["goodsDeliveryCosts"])) {
-            $totalPrice +=
-                $applicationParameters["product"]["goodsDeliveryCosts"];
+        if (isset($applicationParameters['product']['goodsDeliveryCosts'])) {
+            $totalPrice += $applicationParameters['product']['goodsDeliveryCosts'];
         }
 
         return $totalPrice;
@@ -580,159 +617,104 @@ class AhojPay
     private function validateApplicationParameters($applicationParameters)
     {
         if (!is_array($applicationParameters)) {
-            throw new InvalidArgumentException(
-                "vstupny parameter musi byt array"
-            );
+            throw new InvalidArgumentException('vstupny parameter musi byt array');
         }
         if (
-            !array_key_exists("orderNumber", $applicationParameters) ||
-            !(
-                is_string($applicationParameters["orderNumber"]) ||
-                is_numeric($applicationParameters["orderNumber"])
-            ) ||
-            $applicationParameters["orderNumber"] === ""
+            !array_key_exists('orderNumber', $applicationParameters) ||
+            !(is_string($applicationParameters['orderNumber']) || is_numeric($applicationParameters['orderNumber'])) ||
+            $applicationParameters['orderNumber'] === ''
         ) {
-            throw new InvalidArgumentException("orderNumber je povinny udaj");
+            throw new InvalidArgumentException('orderNumber je povinny udaj');
         }
         if (
-            !array_key_exists(
-                "eshopRegisteredCustomer",
-                $applicationParameters
-            ) ||
-            !is_bool($applicationParameters["eshopRegisteredCustomer"])
+            !array_key_exists('eshopRegisteredCustomer', $applicationParameters) ||
+            !is_bool($applicationParameters['eshopRegisteredCustomer'])
         ) {
-            throw new InvalidArgumentException(
-                "eshopRegisteredCustomer je povinny boolean udaj"
-            );
+            throw new InvalidArgumentException('eshopRegisteredCustomer je povinny boolean udaj');
         }
         // customer
-        if (!array_key_exists("customer", $applicationParameters)) {
-            throw new InvalidArgumentException("customer je povinny udaj");
+        if (!array_key_exists('customer', $applicationParameters)) {
+            throw new InvalidArgumentException('customer je povinny udaj');
         }
-        if (
-            !array_key_exists("contactInfo", $applicationParameters["customer"])
-        ) {
-            throw new InvalidArgumentException(
-                "customer.contactInfo je povinny udaj"
-            );
+        if (!array_key_exists('contactInfo', $applicationParameters['customer'])) {
+            throw new InvalidArgumentException('customer.contactInfo je povinny udaj');
         }
         // customer required fields
         $customerRequiredStringFields = array(
-            "firstName",
-            "lastName",
-            "contactInfo.email",
-            "permanentAddress.street",
-            "permanentAddress.city",
-            "permanentAddress.zipCode",
+            'firstName',
+            'lastName',
+            'contactInfo.email',
+            'permanentAddress.street',
+            'permanentAddress.city',
+            'permanentAddress.zipCode',
         );
         foreach ($customerRequiredStringFields as $customerKey) {
-            $value = $this->getValueByKey(
-                $customerKey,
-                $applicationParameters["customer"],
-                null
-            );
-            if (!is_string($value) || $value === "") {
-                throw new InvalidArgumentException(
-                    "customer.$customerKey je povinny textovy udaj"
-                );
+            $value = $this->getValueByKey($customerKey, $applicationParameters['customer'], null);
+            if (!is_string($value) || $value === '') {
+                throw new InvalidArgumentException("customer.$customerKey je povinny textovy udaj");
             }
         }
         // product
-        if (!array_key_exists("product", $applicationParameters)) {
-            throw new InvalidArgumentException("product je povinny udaj");
+        if (!array_key_exists('product', $applicationParameters)) {
+            throw new InvalidArgumentException('product je povinny udaj');
         }
         // product.goodsDeliveryCosts
         if (
-            !array_key_exists(
-                "goodsDeliveryCosts",
-                $applicationParameters["product"]
-            ) ||
-            !is_numeric($applicationParameters["product"]["goodsDeliveryCosts"])
+            !array_key_exists('goodsDeliveryCosts', $applicationParameters['product']) ||
+            !is_numeric($applicationParameters['product']['goodsDeliveryCosts'])
         ) {
-            throw new InvalidArgumentException(
-                "product.goodsDeliveryCosts je povinny numericky udaj"
-            );
+            throw new InvalidArgumentException('product.goodsDeliveryCosts je povinny numericky udaj');
         }
         // product.goods
         if (
-            !array_key_exists("goods", $applicationParameters["product"]) ||
-            !is_array($applicationParameters["product"]["goods"]) ||
-            count($applicationParameters["product"]["goods"]) <= 0
+            !array_key_exists('goods', $applicationParameters['product']) ||
+            !is_array($applicationParameters['product']['goods']) ||
+            count($applicationParameters['product']['goods']) <= 0
         ) {
-            throw new InvalidArgumentException(
-                "product.goods je povinny udaj a musi obsahovat aspon jednu hodnotu"
-            );
+            throw new InvalidArgumentException('product.goods je povinny udaj a musi obsahovat aspon jednu hodnotu');
         }
-        foreach (
-            $applicationParameters["product"]["goods"]
-            as $goodItemKey => $goodItem
-        ) {
-            if (
-                !array_key_exists("name", $goodItem) ||
-                !is_string($goodItem["name"]) ||
-                $goodItem["name"] === ""
-            ) {
-                throw new InvalidArgumentException(
-                    "product.goods[$goodItemKey].name je povinny textovy udaj"
-                );
+        foreach ($applicationParameters['product']['goods'] as $goodItemKey => $goodItem) {
+            if (!array_key_exists('name', $goodItem) || !is_string($goodItem['name']) || $goodItem['name'] === '') {
+                throw new InvalidArgumentException("product.goods[$goodItemKey].name je povinny textovy udaj");
             }
-            if (
-                !array_key_exists("price", $goodItem) ||
-                !is_numeric($goodItem["price"])
-            ) {
-                throw new InvalidArgumentException(
-                    "product.goods[$goodItemKey].price je povinny numericky udaj"
-                );
+            if (!array_key_exists('price', $goodItem) || !is_numeric($goodItem['price'])) {
+                throw new InvalidArgumentException("product.goods[$goodItemKey].price je povinny numericky udaj");
             }
-            if (
-                !array_key_exists("id", $goodItem) ||
-                !is_string($goodItem["id"]) ||
-                $goodItem["id"] === ""
-            ) {
-                throw new InvalidArgumentException(
-                    "product.goods[$goodItemKey].id je povinny textovy udaj"
-                );
+            if (!array_key_exists('id', $goodItem) || !is_string($goodItem['id']) || $goodItem['id'] === '') {
+                throw new InvalidArgumentException("product.goods[$goodItemKey].id je povinny textovy udaj");
             }
-            if (
-                !array_key_exists("count", $goodItem) ||
-                !is_numeric($goodItem["count"])
-            ) {
-                throw new InvalidArgumentException(
-                    "product.goods[$goodItemKey].count je povinny numericky udaj"
-                );
+            if (!array_key_exists('count', $goodItem) || !is_numeric($goodItem['count'])) {
+                throw new InvalidArgumentException("product.goods[$goodItemKey].count je povinny numericky udaj");
             }
 
-            if (array_key_exists("additionalServices", $goodItem)) {
-                if (!is_array($goodItem["additionalServices"])) {
+            if (array_key_exists('additionalServices', $goodItem)) {
+                if (!is_array($goodItem['additionalServices'])) {
                     throw new InvalidArgumentException(
                         "product.goods[$goodItemKey].additionalServices je povinny udaj a musi obsahovat aspon jednu hodnotu"
                     );
                 }
-                foreach (
-                    $goodItem["additionalServices"]
-                    as $additionalServicesItemKey => $additionalServicesItem
-                ) {
+                foreach ($goodItem['additionalServices'] as $additionalServicesItemKey => $additionalServicesItem) {
                     if (
-                        !array_key_exists("id", $additionalServicesItem) ||
-                        !is_string($additionalServicesItem["id"]) ||
-                        $additionalServicesItem["id"] === ""
+                        !array_key_exists('id', $additionalServicesItem) ||
+                        !is_string($additionalServicesItem['id']) ||
+                        $additionalServicesItem['id'] === ''
                     ) {
                         throw new InvalidArgumentException(
                             "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].id je povinny textovy udaj"
                         );
                     }
                     if (
-                        !array_key_exists("name", $additionalServicesItem) ||
-                        !is_string($additionalServicesItem["name"]) ||
-                        $additionalServicesItem["name"] === ""
+                        !array_key_exists('name', $additionalServicesItem) ||
+                        !is_string($additionalServicesItem['name']) ||
+                        $additionalServicesItem['name'] === ''
                     ) {
                         throw new InvalidArgumentException(
                             "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].name je povinny textovy udaj"
                         );
                     }
                     if (
-                        !array_key_exists("price", $additionalServicesItem) ||
-                        !is_numeric($additionalServicesItem["price"])
+                        !array_key_exists('price', $additionalServicesItem) ||
+                        !is_numeric($additionalServicesItem['price'])
                     ) {
                         throw new InvalidArgumentException(
                             "product.goods[$goodItemKey].additionalServices[$additionalServicesItemKey].price je povinny numericky udaj"
@@ -743,11 +725,22 @@ class AhojPay
         }
     }
 
+    private function normalizePhoneNumber($phoneNumber)
+    {
+        $normalizedPhoneNumber = str_replace(' ', '', $phoneNumber);
+        $normalizedPhoneNumber = str_replace('+', '', $normalizedPhoneNumber);
+        if (strpos($normalizedPhoneNumber, '0') === 0) {
+            $normalizedPhoneNumber = substr($normalizedPhoneNumber, 1);
+            $normalizedPhoneNumber = '421' . $normalizedPhoneNumber;
+        }
+        return $normalizedPhoneNumber;
+    }
+
     private function checkAvailabilityAndThrow()
     {
         if (!$this->isAvailable()) {
             throw new ProductNotAvailableException(
-                "Sluzba AhojPay nie je pre zadany businessPlace dostupna. Skontrolujte prosim konfiguracne parametre alebo kontaktujte support."
+                'Sluzba AhojPay nie je pre zadany businessPlace dostupna. Skontrolujte prosim konfiguracne parametre alebo kontaktujte support.'
             );
         }
     }

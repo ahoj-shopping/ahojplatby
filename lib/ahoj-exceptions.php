@@ -19,8 +19,8 @@ class ApiErrorException extends \Exception
         if (is_string($body)) {
             $message .= $body;
         }
-        if (is_array($body) && array_key_exists("message", $body)) {
-            $message .= $body["message"];
+        if (is_array($body) && array_key_exists('message', $body)) {
+            $message .= $body['message'];
         }
         $message .= "\"$body\"";
         parent::__construct();
