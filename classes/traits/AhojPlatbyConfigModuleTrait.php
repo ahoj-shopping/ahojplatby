@@ -206,6 +206,7 @@ trait AhojPlatbyConfigModuleTrait
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_AWAITING',
 						'label' => $this->l('Spracováva sa Ahoj platba'),
+						'desc'	=>	$this->l('Čaká sa na Ahoj platbu, objednávku ešte nevybavujte.'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -217,6 +218,7 @@ trait AhojPlatbyConfigModuleTrait
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_OK',
 						'label' => $this->l('Schválená Ahoj platba'),
+						'desc'	=>	$this->l('Ahoj platba bola schválená, môžete expedovať tovar.'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -228,6 +230,7 @@ trait AhojPlatbyConfigModuleTrait
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_FAIL',
 						'label' => $this->l('Zamietnutá Ahoj platba'),
+						'desc'	=>	$this->l('Ahoj platba bola zamietnutá, zrušte objednávku.'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
@@ -239,6 +242,7 @@ trait AhojPlatbyConfigModuleTrait
 						'type' => 'select',
 						'name' => 'AHOJPLATBY_ORDER_STATE_ERROR',
 						'label' => $this->l('Chyba Ahoj platby'),
+						'desc'	=>	$this->l('Pri Ahoj platbe nastala chyba, objednávku zrušte.'),
 						'options' => array(
 							'query' => $order_state_options,
 							'id' => 'id',
