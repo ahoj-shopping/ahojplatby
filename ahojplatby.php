@@ -104,7 +104,7 @@ class ahojplatby extends PaymentModule
 		}
 		
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
+		$total = (float)$this->context->cart->getOrderTotal(true);
 
 		$is_available = $this->api->isAvailableForTotalPrice($total);
 		if(!$is_available)
@@ -140,7 +140,7 @@ class ahojplatby extends PaymentModule
 			return;
 
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true, Cart::ONLY_PRODUCTS);
+		$total = (float)$this->context->cart->getOrderTotal(true);
 
 		$is_available = $this->api->isAvailableForTotalPrice($total);
 		if(!$is_available)
