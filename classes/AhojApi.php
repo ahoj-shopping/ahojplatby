@@ -241,7 +241,7 @@ class AhojApi
 		// easybalikomat v1.10
 
 		$data = false;
-		$result = false;
+		$result = array();
 
 		/* zasielkovna */
 		if(Module::isInstalled('packetery'))
