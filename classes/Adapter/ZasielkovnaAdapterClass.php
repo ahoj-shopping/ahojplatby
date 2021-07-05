@@ -18,7 +18,31 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 					ON (po.id_branch = pb.id_branch)
 				WHERE po.id_order = '.$id_order.'
 					AND po.is_carrier = 0';
-		return Db::getInstance()->getRow($sql);
+
+		$data = Db::getInstance()->getRow($sql);
+		if(!isset($data['name']) || !$data['name'])
+		{
+			$sql = 'SELECT po.name_branch as name,
+						   po.name_branch as street,
+						   po.currency_branch as currency
+					FROM '._DB_PREFIX_.'packetery_order po
+					WHERE po.id_order = '.$id_order.'
+						AND po.is_carrier = 0';
+			$row =  Db::getInstance()->getRow($sql);
+			
+			$city = substr($row['street'], 0, strpos($row['street'], ','));
+			$street = substr($row['street'], strpos($row['street'], ','));
+			$street = substr($street, 2);
+
+			$data = array(
+				'name'	=>	$row['name'],
+				'city'	=>	$city,
+				'street'	=>	$street,
+				'currency'	=>	$row['currency']
+			);
+		}
+
+		return $data;
 	}
 
 	public function getCarrierOrderByIdOrder16($id_order = false)
@@ -34,8 +58,8 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 					AND po.is_carrier = 0';
 		$row =  Db::getInstance()->getRow($sql);
 
-		$city = substr($row, 0, strpos($row, ','));
-		$street = substr($row,strpos($row, ','));
+		$city = substr($row['street'], 0, strpos($row['street'], ','));
+		$street = substr($row['street'],strpos($row['street'], ','));
 		$street = substr($street, 2);
 
 		$result = array(
