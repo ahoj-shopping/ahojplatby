@@ -22,13 +22,10 @@ class AhojplatbyTestModuleFrontController extends ParentController
 		if (!Validate::isLoadedObject($customer))
 			Tools::redirect('index.php?controller=order&step=1');
 
-		// add order
-		$total = (float)$cart->getOrderTotal(true, Cart::BOTH);
-
 		// api 
 		$this->module->api->init();
 		$this->module->api->setOrder(new Order($id_order)); // test order
-		$response = $this->module->api->createApplication();
+		$response = $this->module->api->createApplication(Tools::getValue('dev'));
 
 		// smarty
 		$this->context->smarty->assign(array(

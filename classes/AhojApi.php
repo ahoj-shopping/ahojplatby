@@ -103,7 +103,7 @@ class AhojApi
 		$this->customer = new Customer($order->id_customer);
 	}
 
-	public function createApplication()
+	public function createApplication($dev = false)
 	{
 		if(!$this->order)
 			Tools::displayError('Order not set');
@@ -127,6 +127,13 @@ class AhojApi
 			'customer'	=>	$this->getCustomerData(),
 			'product'	=>	$this->getOrderListData()
 		);	
+
+		if($dev)
+		{
+			dd(array(
+				$data
+			), true);
+		}
 
 		try {
 			$response = $this->ahojpay->createApplication($data);
@@ -182,6 +189,7 @@ class AhojApi
 	public function getList()
 	{
 		$list = $this->order->getOrderDetailList();
+		$discounts = $this->getNonGiftDiscounts($this->order->id);
 		$data = array();
 
 		if(count($list) > 0)
@@ -190,6 +198,8 @@ class AhojApi
 				$data[] = array(
 					'name' => $value['product_name'],
 					'price' => AhojApi::formatPrice($value['unit_price_tax_incl']),
+					// TODO upravit kalkulacie cien podla kuponov
+					// 'price' => $this->calculateItemPrice($value, $list, $discounts),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
 					'typeText'	=> 'goods',
@@ -291,13 +301,13 @@ class AhojApi
 			return array(
 				'goodsDeliveryTypeText' => $carrier_name,
 				'goodsDeliveryAddress' => array(
-					'name' => $data['name'],
-					'street' => $data['street'],
+					'name' => (isset($data['name']) ? $data['name'] : ''),
+					'street' => (isset($data['street']) ? $data['street'] : ''),
 					'registerNumber' => '',
 					'referenceNumber' => '',
-					'city' => $data['city'],
-					'zipCode' => $data['zip'],
-					'country' => $data['country'],
+					'city' => (isset($data['city']) ? $data['city'] : ''),
+					'zipCode' => (isset($data['zip']) ? $data['zip'] : ''),
+					'country' => (isset($data['country']) ? $data['country'] : 'SK'),
 				),
 			);
 		}
@@ -454,6 +464,126 @@ class AhojApi
 		}
 
 		return array_filter($result);
+	}
+
+	public function	calculateItemPrice($order_detail, $list, $discounts = array())
+	{
+		$price = $order_detail['unit_price_tax_incl'];
+
+		if($discounts && count($discounts) > 0)
+		{
+			foreach ($discounts as $key => $value) {
+				
+				if($value['reduction_product'] == -1) {
+
+					if(array_key_exists($order_detail['product_id'].'-'.$order_detail['product_attribute_id'], $this->cheapest_products) && $cheapest_product_apply) {
+
+						// spracovat zlavu pre tento produkt
+						if($value['reduction_percent'] > 0)
+							$price = ($price - (( $price / 100) * $value['reduction_percent'] ));
+
+						if($value['reduction_amount'] > 0) {
+							$reduc =  $value['reduction_amount'] / 1;
+							if($reduc > 0)
+								$price = $price - $reduc;
+						}
+					}
+				} else if($value['reduction_product'] == -2) {
+
+					$specified_product = $this->getSpecifiedDiscount($value, $this->order->id_cart, $list);
+					if(in_array($order_detail['id_order_detail'], $specified_product)) {
+
+						if($value['reduction_percent'] > 0) {
+							
+							$price = ($price - (( $price / 100) * $value['reduction_percent'] ));
+
+						} else {
+
+							$nbr_products = $this->getNbrProducts($list, $specified_product);
+							$price = $price - $value['value']/ $nbr_products;
+						}
+						
+					}
+				
+				
+				} else {
+					// obycajna zlava
+				}
+				dd(array(
+					$price
+				));
+			}
+
+
+		}	
+		dd(array(
+			$order_detail['unit_price_tax_excl'],
+			$order_detail['unit_price_tax_incl'],
+			$price,
+			$discounts
+		), true);
+		return AhojApi::formatPrice($price);
+	}
+
+	public function getNonGiftDiscounts($id_order)
+	{
+		$sql = '
+		SELECT ocr.*, cr.reduction_percent, cr.reduction_amount, cr.priority, cr.reduction_product, crprg.quantity AS restritction_quantity
+		FROM `'._DB_PREFIX_.'order_cart_rule` ocr
+		LEFT JOIN '._DB_PREFIX_.'cart_rule cr ON (ocr.id_cart_rule = cr.id_cart_rule)
+		LEFT JOIN '._DB_PREFIX_.'cart_rule_product_rule_group crprg ON (crprg.id_cart_rule = cr.id_cart_rule)
+		WHERE ocr.`id_order` = '.(int)$id_order.'
+		AND cr.gift_product = 0
+		ORDER BY ocr.id_order_cart_rule ASC';
+
+		return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);
+	}
+
+	public function getSpecifiedDiscount($value, $id_cart, $list)
+	{
+		// Discount (%) on the selection of products
+	    if ($value['reduction_percent'] && $value['reduction_product'] == -2) {
+
+	        $selected_products_reduction = 0;
+	        $return = array();
+
+	        $cart_rule = new CartRule($value['id_cart_rule']);
+	        $context = Context::getContext();
+	        $context->cart = new Cart($id_cart);
+
+	        $selected_products = $cart_rule->checkProductRestrictions($context, true);
+
+	        if (is_array($selected_products)) {
+	            foreach ($list as $product) {
+	                if (in_array($product['product_id'].'-'.$product['product_attribute_id'], $selected_products)
+	                    || in_array($product['product_id'].'-0', $selected_products)) {
+						
+						$return[] = $product['id_order_detail'];	                   
+	                }
+	            }
+	        }
+
+	        return $return;
+	    }
+	}
+
+
+	public function getNbrProducts($list, $specified_products)
+	{
+		$nbr = 0;
+		foreach ($list as $key => $value) {
+			if(isset($specified_products) && count($specified_products) > 0) {
+
+				if(in_array($value['id_order_detail'], $specified_products)) {
+					$nbr = $nbr + $value['product_quantity'];
+
+				}
+			} else {
+				$nbr = $nbr + $value['product_quantity'];
+			}
+		}
+
+		return $nbr;
 	}
 
 	public static function formatPrice($price)
