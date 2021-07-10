@@ -109,7 +109,7 @@ trait AhojPlatbyConfigModuleTrait
 						'label' => $this->l('Použiť test prihlasovacie údaje'),
 						'name' => 'AHOJPLATBY_TEST_ENVIROMENT',
 						'is_bool' => true,
-						'desc' => $this->l('Replce credentials to test enviroment'),
+						// 'desc' => $this->l('Replce credentials to test enviroment'),
 						'values' => array(
 							array(
 								'id' => 'active_on',
@@ -149,14 +149,14 @@ trait AhojPlatbyConfigModuleTrait
 						'label' => $this->l('Číslo obchodného miesta'),
 						'name' => 'AHOJPLATBY_BUSINESS_PLACE',
 						'is_bool' => true,
-						'desc' => $this->l('ahoj platby business place'),
+						'desc' => $this->l('Testovacie číslo získate v sprievodcovi integráciou. Produkčné číslo zašleme emailom po úspešnom teste.'),
 					),
 					array(
 						'type' => 'text',
 						'label' => $this->l('Bezpečnostný kľúč'),
 						'name' => 'AHOJPLATBY_API_KEY',
 						'is_bool' => true,
-						'desc' => $this->l('Bude zaslaný emailom po úspešnom teste) (k testu viesť, získate po prihlásení do testovacieho Ahoj portálu)'),
+						'desc' => $this->l('Testovací bezpečnostný klúč získate v sprievodcovi integráciou. Produkčný klúč zašleme emailom po úspešnom teste.'),
 					),
 				),
 				'submit' => array(
