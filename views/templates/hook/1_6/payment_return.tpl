@@ -31,6 +31,6 @@
       <p>
         {l s='PLATBA ZRUŠENÁ' mod='ahojplatby'}<br/>
       </p>
-      {l s='Vaša objednávka bola zrušená, pretože platba bola zamietnutá. Môžete vytvoriť novú objednávku a vyberte si iný spôsob platby. Ďakujeme.' mod='ahojplatby'}
+      {l s='Platba Ahoj - Kúp teraz, zaplať o 30 dní bola zrušená. Na zaplatenie objednávky je potrebné zvoliť iný spôsob platby, kontaktujte e-shop. Ďakujeme.' mod='ahojplatby'}
     </p>
 {/if}
