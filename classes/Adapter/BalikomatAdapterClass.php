@@ -2,7 +2,7 @@
 
 class BalikomatAdapterClass extends ParentAdapterClass
 {
-	public function getCarrierOrderByIdOrder($id_order = false)
+	public static function getCarrierOrderByIdOrder($id_order = false)
 	{
 		if(!$id_order)
 			return false;

@@ -2,7 +2,7 @@
 
 class DpdAdapterClass extends ParentAdapterClass
 {
-	public function getCarrierOrderByIdCart($id_cart = false)
+	public static function getCarrierOrderByIdCart($id_cart = false)
 	{
 		if(!$id_cart)
 			return false;
