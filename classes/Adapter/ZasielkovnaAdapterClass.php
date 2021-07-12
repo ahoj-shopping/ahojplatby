@@ -45,7 +45,7 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 		return $data;
 	}
 
-	public function getCarrierOrderByIdOrder16($id_order = false)
+	public static function getCarrierOrderByIdOrder16($id_order = false)
 	{
 		if(!$id_order)
 			return false;
