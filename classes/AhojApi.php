@@ -263,7 +263,7 @@ class AhojApi
 
 			if($data)
 			{
-				$result = $this->formatExtCarrier('Zaielkovna', $data);
+				$result = $this->formatExtCarrier('Zasielkovna', $data);
 			}			
 		}
 		/* zasielkovna end */

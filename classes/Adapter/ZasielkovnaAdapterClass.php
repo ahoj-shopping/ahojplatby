@@ -30,16 +30,19 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 						AND po.is_carrier = 0';
 			$row =  Db::getInstance()->getRow($sql);
 			
-			$city = substr($row['street'], 0, strpos($row['street'], ','));
-			$street = substr($row['street'], strpos($row['street'], ','));
-			$street = substr($street, 2);
+			if(isset($row) && isset($row['name']) && $row['name'])
+			{
+				$city = substr($row['street'], 0, strpos($row['street'], ','));
+				$street = substr($row['street'], strpos($row['street'], ','));
+				$street = substr($street, 2);
 
-			$data = array(
-				'name'	=>	$row['name'],
-				'city'	=>	$city,
-				'street'	=>	$street,
-				'currency'	=>	$row['currency']
-			);
+				$data = array(
+					'name'	=>	$row['name'],
+					'city'	=>	$city,
+					'street'	=>	$street,
+					'currency'	=>	$row['currency']
+				);	
+			}
 		}
 
 		return $data;
@@ -58,6 +61,9 @@ class ZasielkovnaAdapterClass extends ParentAdapterClass
 					AND po.is_carrier = 0';
 		$row =  Db::getInstance()->getRow($sql);
 
+		if(!isset($row['name']) && !$row['name'])
+			return false;
+		
 		$city = substr($row['street'], 0, strpos($row['street'], ','));
 		$street = substr($row['street'],strpos($row['street'], ','));
 		$street = substr($street, 2);
