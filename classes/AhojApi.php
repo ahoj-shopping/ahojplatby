@@ -17,6 +17,11 @@ class AhojApi
 	public $debug;
 	public $debug_data;
 
+	public $cheapest_product_used = false;
+	public $order_cart_for_discounts = array();
+	public $cumulative_discount = 0;
+
+
 	const SUCCESS = 'success';
 	const FAIL = 'fail';
 
@@ -177,8 +182,11 @@ class AhojApi
 		$res = $this->getExtCarrier();
 		$data = array_merge($data, $res);
 
+		$carrier = new Carrier($this->order->id_carrier);
+
 		$res =  array(
 			'goods'	=>	$this->getList(),
+			'goodsDeliveryTypeText' => $carrier->name,
 			'goodsDeliveryCosts' => AhojApi::formatPrice($this->order->total_shipping_tax_incl)
 		);
 		$data = array_merge($data, $res);
@@ -197,9 +205,9 @@ class AhojApi
 			foreach ($list as $key => $value) {
 				$data[] = array(
 					'name' => $value['product_name'],
-					'price' => AhojApi::formatPrice($value['unit_price_tax_incl']),
+					// 'price' => AhojApi::formatPrice($value['unit_price_tax_incl']),
 					// TODO upravit kalkulacie cien podla kuponov
-					// 'price' => $this->calculateItemPrice($value, $list, $discounts),
+					'price' => $this->calculateItemPrice($value, $list, $discounts),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
 					'typeText'	=> 'goods',
@@ -224,13 +232,11 @@ class AhojApi
 			// add discount as item row
 			if($this->order->total_discounts > 0)
 			{	
-				
-				$order_cart_rules = AhojApi::getCartRules($this->order->id);
-				$cart_rules_codes = AhojApi::formatOrderCartRulesCodes($order_cart_rules);
+				$cart_rules_codes = AhojApi::formatOrderCartRulesCodes($this->order_cart_for_discounts);
 
 				$data[] = array(
 					'name' => $this->module->l('Zľavový kupón'),
-					'price' => -1 * AhojApi::formatPrice($this->order->total_discounts),
+					'price' => -1 * AhojApi::formatPrice($this->getOrderCumulativeDiscount()),
 					'id' => 'discount',
 					'count' => 1,
 					'typeText'	=> 'discount',
@@ -263,7 +269,7 @@ class AhojApi
 
 			if($data)
 			{
-				$result = $this->formatExtCarrier('Zasielkovna', $data);
+				$result = $this->formatExtCarrier($data);
 			}			
 		}
 		/* zasielkovna end */
@@ -274,7 +280,7 @@ class AhojApi
 			$data = DpdAdapterClass::getCarrierOrderByIdCart($this->order->id_cart);
 			if($data)
 			{
-				$result = $this->formatExtCarrier('DPD_parcelshop', $data);
+				$result = $this->formatExtCarrier($data);
 			}
 		}
 		/* dpd end */
@@ -286,7 +292,7 @@ class AhojApi
 			$data = BalikomatAdapterClass::getCarrierOrderByIdOrder($this->order->id);
 			if($data)
 			{
-				$result = $this->formatExtCarrier('Balikomat', $data);
+				$result = $this->formatExtCarrier($data);
 			}
 		}
 		/* balikomat end */
@@ -294,12 +300,11 @@ class AhojApi
 		return $result;
 	}
 
-	public function formatExtCarrier($carrier_name, $data)
+	public function formatExtCarrier($data)
 	{	
 		if($data)
 		{
 			return array(
-				'goodsDeliveryTypeText' => $carrier_name,
 				'goodsDeliveryAddress' => array(
 					'name' => (isset($data['name']) ? $data['name'] : ''),
 					'street' => (isset($data['street']) ? $data['street'] : ''),
@@ -455,7 +460,7 @@ class AhojApi
 	public static function formatOrderCartRulesCodes($order_cart_rules)
 	{
 		$result = array();
-		if($order_cart_rules)
+		if($order_cart_rules && count($order_cart_rules) > 0)
 		{
 			foreach ($order_cart_rules as $key => $value) {
 				$result[] = $value['code'];
@@ -472,20 +477,29 @@ class AhojApi
 		if($discounts && count($discounts) > 0)
 		{
 			foreach ($discounts as $key => $value) {
-				
-				if($value['reduction_product'] == -1) {
 
-					if(array_key_exists($order_detail['product_id'].'-'.$order_detail['product_attribute_id'], $this->cheapest_products) && $cheapest_product_apply) {
+				$reduc = 0;
+
+				if($value['reduction_product'] == -1 && !$this->cheapest_product_used) {
+
+					$cheapest_product = $this->isCheapestProduct($order_detail, $list);
+					if(isset($cheapest_product) && $cheapest_product['id_order_detail'] == $order_detail['id_order_detail']) {
 
 						// spracovat zlavu pre tento produkt
-						if($value['reduction_percent'] > 0)
-							$price = ($price - (( $price / 100) * $value['reduction_percent'] ));
+						if($value['reduction_percent'] > 0) 
+						{
+							$reduc =  (( $order_detail['unit_price_tax_incl'] / 100) * $value['reduction_percent'] );
+							if($reduc > 0)
+								$price -= $reduc;
+						}
 
 						if($value['reduction_amount'] > 0) {
 							$reduc =  $value['reduction_amount'] / 1;
 							if($reduc > 0)
-								$price = $price - $reduc;
+								$price -= $reduc;
 						}
+
+						$this->cheapest_product_used = true;
 					}
 				} else if($value['reduction_product'] == -2) {
 
@@ -494,40 +508,59 @@ class AhojApi
 
 						if($value['reduction_percent'] > 0) {
 							
-							$price = ($price - (( $price / 100) * $value['reduction_percent'] ));
+						
+							$specified_product_total = $this->getSpecifiedProductsTotalPrice($list, $specified_product);
+							$percentage = ($value['value'] / $specified_product_total) * 100;
 
+							$reduc = (( $order_detail['unit_price_tax_incl'] / 100) * $percentage );
+							$price -= $reduc;
+							
 						} else {
 
-							$nbr_products = $this->getNbrProducts($list, $specified_product);
-							$price = $price - $value['value']/ $nbr_products;
+							$nbr_products = $this->getSpecifiedProductsNbr($list, $specified_product);
+							$reduc = $value['value'] / $nbr_products;
+							$price -= $reduc;
 						}
-						
 					}
 				
-				
 				} else {
+
 					// obycajna zlava
+					$this->order_cart_for_discounts[$value['id_order_cart_rule']] = $value;
 				}
-				dd(array(
-					$price
-				));
+
+				// if($value['id_cart_rule'] == 3 && $order_detail['id_order_detail'] == 27)
+				// dd(array(
+				// 	$value,
+				// 	$reduc
+				// ), true);
 			}
-
-
 		}	
-		dd(array(
-			$order_detail['unit_price_tax_excl'],
-			$order_detail['unit_price_tax_incl'],
-			$price,
-			$discounts
-		), true);
+		// dd(array(
+		// 	$order_detail['unit_price_tax_incl'],
+		// 	$price,
+		// 	round($order_detail['unit_price_tax_incl'] - $price, 2),
+		// ), false);
 		return AhojApi::formatPrice($price);
+	}
+
+	public function	getOrderCumulativeDiscount()
+	{
+		$result = 0;
+		if($this->order_cart_for_discounts && count($this->order_cart_for_discounts) > 0)
+		{
+			foreach ($this->order_cart_for_discounts as $key => $value) {
+				$result += round($value['value'], 2);
+			}
+		}
+
+		return $result;
 	}
 
 	public function getNonGiftDiscounts($id_order)
 	{
 		$sql = '
-		SELECT ocr.*, cr.reduction_percent, cr.reduction_amount, cr.priority, cr.reduction_product, crprg.quantity AS restritction_quantity
+		SELECT ocr.*, cr.reduction_percent, cr.reduction_amount, cr.priority, cr.reduction_product, crprg.quantity AS restritction_quantity, cr.code
 		FROM `'._DB_PREFIX_.'order_cart_rule` ocr
 		LEFT JOIN '._DB_PREFIX_.'cart_rule cr ON (ocr.id_cart_rule = cr.id_cart_rule)
 		LEFT JOIN '._DB_PREFIX_.'cart_rule_product_rule_group crprg ON (crprg.id_cart_rule = cr.id_cart_rule)
@@ -546,11 +579,11 @@ class AhojApi
 	        $selected_products_reduction = 0;
 	        $return = array();
 
-	        $cart_rule = new CartRule($value['id_cart_rule']);
+	        $cart_rule = new CartRuleOverride($value['id_cart_rule']);
 	        $context = Context::getContext();
 	        $context->cart = new Cart($id_cart);
 
-	        $selected_products = $cart_rule->checkProductRestrictions($context, true);
+	        $selected_products = $cart_rule->checkProductRestrictionsOverride($context, true);
 
 	        if (is_array($selected_products)) {
 	            foreach ($list as $product) {
@@ -566,8 +599,7 @@ class AhojApi
 	    }
 	}
 
-
-	public function getNbrProducts($list, $specified_products)
+	public function getSpecifiedProductsNbr($list, $specified_products)
 	{
 		$nbr = 0;
 		foreach ($list as $key => $value) {
@@ -580,6 +612,49 @@ class AhojApi
 			} else {
 				$nbr = $nbr + $value['product_quantity'];
 			}
+		}
+
+		return $nbr;
+	}
+
+	public function isCheapestProduct($order_detail, $list)
+	{
+		$cheapest_product = false;
+		$min_price = false;
+		foreach ($list as $key => $value) {
+			if(!$min_price || $value['unit_price_tax_incl'] <= $min_price)
+			{
+				$min_price = $value['unit_price_tax_incl'];
+				$cheapest_product = $value; 
+			}
+		}
+
+		return $cheapest_product;
+	}
+
+	public function getSpecifiedProductsTotalPrice($list, $specified_products)
+	{
+		$total = 0;
+		foreach ($list as $key => $value) {
+			if(isset($specified_products) && count($specified_products) > 0) {
+
+				if(in_array($value['id_order_detail'], $specified_products)) {
+					$total = $total + $value['total_price_tax_incl'];
+
+				}
+			} else {
+				$total = $total + $value['total_price_tax_incl'];
+			}
+		}
+
+		return $total;
+	}
+
+	public function getNbrOrderedProducts($list)
+	{
+		$nbr = 0;
+		foreach ($list as $key => $value) {
+			$nbr = $nbr + $value['product_quantity'];
 		}
 
 		return $nbr;

@@ -5,6 +5,7 @@ include_once(dirname(__FILE__). "/classes/Traits/AhojPlatbyBaseModuleTrait.php")
 include_once(dirname(__FILE__). "/classes/Traits/AhojPlatbyConfigModuleTrait.php");
 
 // Classes
+include_once(dirname(__FILE__). "/classes/CartRuleOverride.php");
 include_once(dirname(__FILE__). "/classes/AhojApi.php");
 // include_once(dirname(__FILE__). "/classes/CustomStock.php");
 
