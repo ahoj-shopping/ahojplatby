@@ -235,11 +235,11 @@ class AhojApi
 				$cart_rules_codes = AhojApi::formatOrderCartRulesCodes($this->order_cart_for_discounts);
 
 				$data[] = array(
-					'name' => $this->module->l('Zľavový kupón'),
+					'name' => $this->module->l('Zľava z objednávky'),
 					'price' => -1 * AhojApi::formatPrice($this->getOrderCumulativeDiscount()),
-					'id' => 'discount',
+					'id' => 'ABATEMENT',
 					'count' => 1,
-					'typeText'	=> 'discount',
+					'typeText'	=> 'ABATEMENT',
 					'codeText'	=> $cart_rules_codes,
 					'nonMaterial' => true
 				);
