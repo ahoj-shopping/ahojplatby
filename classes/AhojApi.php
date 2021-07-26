@@ -20,6 +20,7 @@ class AhojApi
 	public $cheapest_product_used = false;
 	public $order_cart_for_discounts = array();
 	public $cumulative_discount = 0;
+	public $used_discounts = array();
 
 
 	const SUCCESS = 'success';
@@ -230,10 +231,10 @@ class AhojApi
 			}
 
 			// add discount as item row
-			if($this->order->total_discounts > 0)
+			if(isset($this->order_cart_for_discounts) && count($this->order_cart_for_discounts) > 0)
 			{	
 				$cart_rules_codes = AhojApi::formatOrderCartRulesCodes($this->order_cart_for_discounts);
-
+				
 				$data[] = array(
 					'name' => $this->module->l('Zľava z objednávky'),
 					'price' => -1 * AhojApi::formatPrice($this->getOrderCumulativeDiscount()),
@@ -478,8 +479,10 @@ class AhojApi
 		{
 			foreach ($discounts as $key => $value) {
 
-				$reduc = 0;
+				if(in_array($value['id_cart_rule'], $this->used_discounts))
+					continue;
 
+				$reduc = 0;
 				if($value['reduction_product'] == -1 && !$this->cheapest_product_used) {
 
 					$cheapest_product = $this->isCheapestProduct($order_detail, $list);
@@ -494,11 +497,22 @@ class AhojApi
 						}
 
 						if($value['reduction_amount'] > 0) {
-							$reduc =  $value['reduction_amount'] / 1;
+
+							if($value['reduction_tax'])
+							{
+								$reduc =  $value['reduction_amount'] / 1;
+							}
+							else 
+							{
+								$tax = $order_detail['unit_price_tax_incl'] / $order_detail['unit_price_tax_excl'];
+								$reduc =  $value['reduction_amount'] * $tax;
+							}
+
 							if($reduc > 0)
 								$price -= $reduc;
 						}
 
+						$this->used_discounts[] = $value['id_cart_rule'];
 						$this->cheapest_product_used = true;
 					}
 				} else if($value['reduction_product'] == -2) {
@@ -523,7 +537,28 @@ class AhojApi
 						}
 					}
 				
-				} else {
+				} else if($value['reduction_product'] > 0 && $order_detail['product_id'] == $value['reduction_product']) {
+
+					if($value['reduction_amount'] > 0) {
+
+						if($value['reduction_tax'])
+						{
+							$reduc =  $value['reduction_amount'] / 1;
+						}
+						else 
+						{
+							$tax = $order_detail['unit_price_tax_incl'] / $order_detail['unit_price_tax_excl'];
+							$reduc =  $value['reduction_amount'] * $tax;
+						}
+
+						if($reduc > 0) {
+
+							$price -= $reduc;
+							$this->used_discounts[] = $value['id_cart_rule'];
+						}
+					}
+
+				} else if($value['reduction_product'] != -1) {
 
 					// obycajna zlava
 					$this->order_cart_for_discounts[$value['id_order_cart_rule']] = $value;
@@ -541,6 +576,10 @@ class AhojApi
 		// 	$price,
 		// 	round($order_detail['unit_price_tax_incl'] - $price, 2),
 		// ), false);
+		
+		if($price <= 0)
+			$price = 0;
+
 		return AhojApi::formatPrice($price);
 	}
 
@@ -560,7 +599,7 @@ class AhojApi
 	public function getNonGiftDiscounts($id_order)
 	{
 		$sql = '
-		SELECT ocr.*, cr.reduction_percent, cr.reduction_amount, cr.priority, cr.reduction_product, crprg.quantity AS restritction_quantity, cr.code
+		SELECT ocr.*, cr.reduction_percent, cr.reduction_amount, cr.reduction_tax, cr.priority, cr.reduction_product, crprg.quantity AS restritction_quantity, cr.code
 		FROM `'._DB_PREFIX_.'order_cart_rule` ocr
 		LEFT JOIN '._DB_PREFIX_.'cart_rule cr ON (ocr.id_cart_rule = cr.id_cart_rule)
 		LEFT JOIN '._DB_PREFIX_.'cart_rule_product_rule_group crprg ON (crprg.id_cart_rule = cr.id_cart_rule)
