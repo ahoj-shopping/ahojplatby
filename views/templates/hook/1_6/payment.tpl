@@ -19,8 +19,26 @@
 			</a> *}
 
 			<div class="ahojplatby" data-href="{$link->getModuleLink('ahojplatby', 'payment')|escape:'html':'UTF-8'}" title="{l s='Ahoj platby' mod='ahojplatby'}">
-				{$payment_module_name}
-				<span>{include file="../payment_description.tpl"}</span>
+				<span>{$payment_module_name}</span>
+			
+				<img class="ahojplatby_logo_right" src="{$ahoj_logo_url}" alt="">
+				
+				<span>
+					<span class="row clearfix">
+
+						<span class="ahojplatby_description">
+							
+							{* javascript include *}
+							{$description.js nofilter}
+
+							{* banner *}
+							{$description.html_description nofilter}
+
+						</span>
+
+					</span>
+				</span>
+
 			</div>
 		</div>
 

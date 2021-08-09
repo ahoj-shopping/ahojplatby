@@ -118,6 +118,7 @@ class ahojplatby extends PaymentModule
 		$this->smarty->assign(array(
 			'promotion_info' => $promotion_info,
 			'description' => $description,
+			'ahoj_logo_url'	=>	Tools::getHttpHost(true).__PS_BASE_URI__.'modules/ahojplatby/img/ahoj-logo-1x.png'
 		));
 
 		$newOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
@@ -125,7 +126,7 @@ class ahojplatby extends PaymentModule
 			->setCallToActionText('Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní')
 			->setAction($this->context->link->getModuleLink($this->name, 'payment', array(), true))
 			// ->setAdditionalInformation($this->l('Ahoj platby addintional information'));
-			->setAdditionalInformation($this->fetch('module:ahojplatby/views/templates/hook/payment_description.tpl'));
+			->setAdditionalInformation($this->render('hook', 'payment.tpl'));
 
 		$payment_options = [
 			$newOption,
@@ -155,6 +156,7 @@ class ahojplatby extends PaymentModule
 			'payment_module_name' => 'Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní',
 			'promotion_info' => $promotion_info,
 			'description' => $description,
+			'ahoj_logo_url'	=>	Tools::getHttpHost(true).__PS_BASE_URI__.'modules/ahojplatby/img/ahoj-logo-1x.png',
 			'this_path' => $this->_path,
 			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
 		));

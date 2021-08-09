@@ -26,6 +26,21 @@
 * to avoid any conflicts with others containers.
 */
 
+.ahojplatby_logo {
+	float: left;
+}
+.ahojplatby_logo_right {
+	padding-left: 50px;
+}
+
+.ahojplatby_logo_indentation {
+	margin-left: 25px;
+}
+.ahojplatby_description {
+	float: left;
+	margin-top: -15px;
+}
+
 div.payment_module {
 	margin-bottom: 10px; }
 	div.payment_module div.ahojplatby  {
