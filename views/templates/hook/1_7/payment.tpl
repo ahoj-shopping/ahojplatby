@@ -14,7 +14,7 @@
 			{$description.html_description nofilter}
 
 		</div>
-		<img class="ahojplatby_logo" src="{$ahoj_logo_url}" alt="">
+		<img class="ahojplatby_logo" src="{$ahoj_logo_url}" alt="" width="55" height="31">
 
 
 	</div>

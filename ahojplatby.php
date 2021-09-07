@@ -44,7 +44,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.2.2';
+		$this->version = '1.2.3';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -250,6 +250,9 @@ class ahojplatby extends PaymentModule
 		if($this->is17)
 		{
 			$price = $params['product']->rounded_display_price;
+			// Task 4343
+			if(!$price)
+				$price = $params['product']->price_amount;
 		}
 		else
 		{	
