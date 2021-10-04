@@ -130,7 +130,7 @@ class AhojApi
 				'id_order'	=>	$this->order->id,
 				'token'		=>	$this->getSecurityToken($this->order->id, self::FAIL)
 			)),
-			'eshopRegisteredCustomer' => $this->customer->isGuest(),
+			'eshopRegisteredCustomer' => $this->getRegisteredCustomer(),
 			'customer'	=>	$this->getCustomerData(),
 			'product'	=>	$this->getOrderListData()
 		);	
@@ -698,6 +698,19 @@ class AhojApi
 		}
 
 		return $nbr;
+	}
+
+	public function getRegisteredCustomer()
+	{
+		$sql = 'SELECT COUNT(id_order) 
+				FROM '._DB_PREFIX_.'orders 
+				WHERE id_customer = '.$this->customer->id.'
+					AND valid = 1';
+		$count_order = Db::getInstance()->getValue($sql);
+		if($count_order > 0)
+			return true;
+		else
+			return false;
 	}
 
 	public static function formatPrice($price)
