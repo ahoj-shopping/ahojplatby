@@ -8,6 +8,7 @@ class AhojApiRepository
     const GET_APPLICATION_URL_URL = '/eshop/application/{contractNumber}/application-url';
     const GET_APPLICATION_INFO_URL = '/eshop/application/{contractNumber}';
     const GET_PROMOTIONS_URL = '/eshop/{businessPlace}/calculation/promotions';
+    const POST_CALCULATION_URL = '/eshop/{businessPlace}/calculation/';
 
     private $baseApiUrlMap = array(
         'dev' => 'https://api.test.psws.xyz',
@@ -24,6 +25,26 @@ class AhojApiRepository
     function httpPostApplication($applicationRequest)
     {
         $url = $this->getBaseUrl() . self::CREATE_APPLICATION_URL;
+        $postDataEncoded = json_encode($applicationRequest);
+
+        $ch = $this->initCurl();
+        curl_setopt($ch, CURLOPT_URL, $url);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $postDataEncoded);
+        $responseBody = curl_exec($ch);
+        $responseCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $responseDecoded = json_decode($responseBody, true);
+        curl_close($ch);
+
+        return array(
+            'body' => $responseDecoded,
+            'code' => $responseCode,
+        );
+    }
+
+    function httpPostCalculation($applicationRequest, $businessPlace)
+    {
+        $url = $this->getBaseUrl() . str_replace('{businessPlace}', $businessPlace, self::POST_CALCULATION_URL);
         $postDataEncoded = json_encode($applicationRequest);
 
         $ch = $this->initCurl();

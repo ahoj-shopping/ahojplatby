@@ -23,7 +23,7 @@ class ApiErrorException extends \Exception
             $message .= $body['message'];
         }
         $message .= "\"$body\"";
-        parent::__construct();
+        parent::__construct($message, $code);
     }
 }
 
