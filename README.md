@@ -1,4 +1,4 @@
-![Ahoj platby Logo](/logo.png)
+![Ahoj platby Logo](/modules/ahojplatby/logo.png)
 # Ahoj platby
 Modul Ahoj platby pre open source ecommerce systém PrestaShop verzie 1.6 a 1.7
 
