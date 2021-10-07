@@ -8,7 +8,7 @@ $(document).ready(function() {
 
 	var origupdatePrice = updatePrice;
 	updatePrice = function(str) {
-		console.log('override updatePrice '+priceWithDiscountsDisplay);
+		// console.log('override updatePrice '+priceWithDiscountsDisplay);
 		showAhojPlatbyBanner();
 	    return origupdatePrice(origupdatePrice);
 	}
