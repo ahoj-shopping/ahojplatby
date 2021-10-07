@@ -1,5 +1,7 @@
 *
 !modules/ahojplatby/
 !modules/ahojplatby/*
+!.github/
+!.github/*
 !README.md
 !.gitignore
