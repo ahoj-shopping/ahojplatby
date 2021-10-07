@@ -107,7 +107,7 @@ class ahojplatby extends PaymentModule
 		
 		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true);
-		$payment_methods = $this->api->ahojpay->getPaymentMethods($total);
+		$payment_methods = $this->api->getPaymentMethods($total);
 
 		if(count($payment_methods) > 0)
 		{
@@ -152,7 +152,7 @@ class ahojplatby extends PaymentModule
 
 		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true);
-		$payment_methods = $this->api->ahojpay->getPaymentMethods($total);
+		$payment_methods = $this->api->getPaymentMethods($total);
 		$available_payment_methods = array();
 
 		if(count($payment_methods) > 0)
@@ -297,10 +297,11 @@ class ahojplatby extends PaymentModule
 		$banner_data = $this->api->getProductData($price);
 
 		$this->smarty->assign(array(
+			'banner_ajax_url'	=>	$this->context->link->getModuleLink('ahojplatby', 'banner'),
 			'banner_data' => $banner_data
 		));
 
-		return $this->render('hook', 'product.tpl', true);
+		return $this->render('hook', 'product.tpl');
 	}
 
 

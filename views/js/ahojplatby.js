@@ -39,7 +39,7 @@ function stopAjaxQuery() {
 $(document).ready(function() {
 
 	// console.log(ahojpay);
-	console.log(applicationUrl);
+	// console.log(applicationUrl);
 	// alert(applicationUrl);
 	// alert(test);
 	ahojpay.openApplication(applicationUrl);

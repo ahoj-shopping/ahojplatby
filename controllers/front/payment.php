@@ -28,7 +28,7 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 
 		// init api 
 		$this->module->api->init();
-		$payment_methods = $this->module->api->ahojpay->getPaymentMethods($total);
+		$payment_methods = $this->module->api->getPaymentMethods($total);
 		$promotionCode = Tools::getValue('promotioncode');
 		$payment_method_name = 'AhojPlatby undefined payment method';
 		$validate_promotion_code = false;
