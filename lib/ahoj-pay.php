@@ -31,6 +31,7 @@ class AhojPay
         'prod' => 'https://eshop.ahojsplatky.sk/merchant/plugin/ahojpay.js',
     );
 
+
     /**
      * Priklad pouzitia:
      * <?php
@@ -381,7 +382,7 @@ class AhojPay
             'productType' => $productPromotionInfo['productType'],
             'instalmentCount' => $responseBody['instalmentCount'],
             'instalment' => $responseBody['instalment'],
-            'lastInstalment' => $responseBody['lastInstalment'],
+            'lastInstalment' => isset($responseBody['lastInstalment']) ? $responseBody['lastInstalment'] : null,
         );
     }
 
@@ -533,16 +534,16 @@ class AhojPay
      *
      * @return string vygenerovaný HTML kód s obsahom popisu platobnej metódy
      */
-    function generatePaymentMethodDescriptionHtml($price, $cssClass, $promotionInfo = self::PROMOTION_CODE_ODLOZTO)
+    function generatePaymentMethodDescriptionHtml($price, $cssClass, $promotionCode = self::PROMOTION_CODE_ODLOZTO)
     {
-        $calculation = $this->getCalculation($price, $promotionInfo);
+        $calculation = $this->getCalculation($price, $promotionCode);
         $calculation = json_encode($calculation);
 
         $html = "<div class=\"$cssClass\"></div>\n";
         $html .= "<script type=\"text/javascript\">\n";
         $html .= "(function() {\n";
         $html .= "    var calculation = JSON.parse('$calculation');\n";
-        $html .= "    ahojpay.paymentMethodDescription(\"$price\", \".$cssClass\", \"$promotionInfo\", calculation)\n";
+        $html .= "    ahojpay.paymentMethodDescription(\"$price\", \".$cssClass\", \"$promotionCode\", calculation)\n";
         $html .= "})();\n";
         $html .= "</script>\n";
         return $html;

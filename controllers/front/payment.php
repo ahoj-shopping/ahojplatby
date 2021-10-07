@@ -26,11 +26,41 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 			// '{bankwire_owner}' => Configuration::get('BANK_WIRE_OWNER'),
 		);
 
+		// init api 
+		$this->module->api->init();
+		$payment_methods = $this->module->api->ahojpay->getPaymentMethods($total);
+		$promotionCode = Tools::getValue('promotioncode');
+		$payment_method_name = 'AhojPlatby undefined payment method';
+		$validate_promotion_code = false;
+		if(count($payment_methods) && $promotionCode)
+		{
+			foreach ($payment_methods as $payment_method) {
+				if($payment_method['promotionCode'] == $promotionCode)
+				{
+					$payment_method_name = Ahojplatby::PAYMENT_NAME_PREFIX.$payment_method['name'];
+					$validate_promotion_code = true;
+				}
+			}
+		}
+
+		if(!$validate_promotion_code)
+		{
+			PrestaShopLogger::addLog(
+				'Payment: validate promotionCode failed id_cart: '.$cart->id,
+				4,
+				null,
+				$this->module->name,
+				$cart->id,
+				true
+			);
+			die($this->l('promotion kod nie je validny'));
+		}
+
 		$this->module->validateOrder(
 			$cart->id, 
 			Configuration::get('AHOJPLATBY_ORDER_STATE_AWAITING'), 
 			$total, 
-			$this->module->displayName, 
+			$payment_method_name, 
 			NULL, 
 			$mailVars, 
 			(int)$this->context->currency->id, 
@@ -46,12 +76,10 @@ class AhojplatbyPaymentModuleFrontController extends ParentController
 			$this->module->currentOrder,
 			true
 		);
-
-		// api 
-		$this->module->api->init();
+		
 		// $this->module->api->setOrder(new Order(16)); // test order
 		$this->module->api->setOrder(new Order($this->module->currentOrder));
-		$response = $this->module->api->createApplication();
+		$response = $this->module->api->createApplication($promotionCode);
 
 		// smarty
 		$this->context->smarty->assign(array(

@@ -5,7 +5,7 @@
 
 	<div class="row clearfix">
 
-		<div class="ahojplatby_description">
+		<div class="ahojplatby_description ">
 			
 			{* javascript include *}
 			{$description.js nofilter}

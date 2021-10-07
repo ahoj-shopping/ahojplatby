@@ -57,9 +57,9 @@ class AhojApi
 		$eshop_key = false;
 		if($test)
 		{
-			// $mode = 'dev';
-
-			$mode = 'test';
+			// TODO vratit spat na test
+			$mode = 'dev';
+			// $mode = 'test';
 			$business_place = 'TEST_ESHOP';
 			$eshop_key = '1111111111aaaaaaaaaa2222';
 		}
@@ -110,7 +110,7 @@ class AhojApi
 		$this->customer = new Customer($order->id_customer);
 	}
 
-	public function createApplication($dev = false)
+	public function createApplication($promotioncode = false, $dev = false)
 	{
 		if(!$this->order)
 			Tools::displayError('Order not set');
@@ -143,7 +143,7 @@ class AhojApi
 		}
 
 		try {
-			$response = $this->ahojpay->createApplication($data);
+			$response = $this->ahojpay->createApplication($data, $promotioncode);
 		} catch (PrestaShopException $e) {
 			// Error handling
 			// Tools::displayError($e->getMessage());
@@ -208,7 +208,6 @@ class AhojApi
 				$data[] = array(
 					'name' => $value['product_name'],
 					// 'price' => AhojApi::formatPrice($value['unit_price_tax_incl']),
-					// TODO upravit kalkulacie cien podla kuponov
 					'price' => $this->calculateItemPrice($value, $list, $discounts),
 					'id' => $value['product_id'].'_'.$value['product_attribute_id'],
 					'count' => $value['product_quantity'],
@@ -410,11 +409,11 @@ class AhojApi
 		return $response;
 	}
 
-	public function generatePaymentMethodDescriptionHtml($total = 0)
+	public function generatePaymentMethodDescriptionHtml($total = 0, $cssClass = 'default', $productType = false)
 	{
 		return array(
 			'js' => $this->ahojpay->generateInitJavaScriptHtml(),
-			'html_description' => $this->ahojpay->generatePaymentMethodDescriptionHtml($total)
+			'html_description' => $this->ahojpay->generatePaymentMethodDescriptionHtml($total, $cssClass, $productType)
 		);
 	}
 

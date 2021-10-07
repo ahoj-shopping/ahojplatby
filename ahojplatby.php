@@ -40,6 +40,8 @@ class ahojplatby extends PaymentModule
 	public $callback_url;
 	public $is17 = false;
 
+	CONST PAYMENT_NAME_PREFIX = 'Ahoj - ';
+
 	public function __construct()
 	{
 		$this->name = 'ahojplatby';
@@ -105,33 +107,41 @@ class ahojplatby extends PaymentModule
 		
 		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true);
+		$payment_methods = $this->api->ahojpay->getPaymentMethods($total);
 
-		$is_available = $this->api->isAvailableForTotalPrice($total);
-		if(!$is_available)
+		if(count($payment_methods) > 0)
 		{
-			return false;
+			foreach ($payment_methods as $key => $payment_method) {
+
+				// pokial nie je dostupna platba preskocit
+				if(!$payment_method['isAvailable']) continue;
+
+				$description = $this->api->generatePaymentMethodDescriptionHtml(
+					$total, 
+					$payment_method['promotionCode'], 
+					$payment_method['promotionCode']
+				);
+				
+				$this->smarty->assign(array(
+					'description' => $description,
+					'add_class'	=>	$payment_method['promotionCode'],
+					'ahoj_logo_url'	=>	Tools::getHttpHost(true).__PS_BASE_URI__.'modules/ahojplatby/img/ahoj-logo-1x.png'
+				));
+
+				$payment_option = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
+				$payment_option->setModuleName($this->name)
+					->setCallToActionText(Ahojplatby::PAYMENT_NAME_PREFIX.$payment_method['name'])
+					->setAction(
+						$this->context->link->getModuleLink($this->name, 'payment', 
+							array(
+								'promotioncode' => $payment_method['promotionCode']
+							)
+						, true))
+					->setAdditionalInformation($this->render('hook', 'payment.tpl'));
+				$payment_options[] = $payment_option;
+			}
 		}
-
-		$promotion_info = $this->api->getPromotionInfo();
-		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
-
-		$this->smarty->assign(array(
-			'promotion_info' => $promotion_info,
-			'description' => $description,
-			'ahoj_logo_url'	=>	Tools::getHttpHost(true).__PS_BASE_URI__.'modules/ahojplatby/img/ahoj-logo-1x.png'
-		));
-
-		$newOption = new PrestaShop\PrestaShop\Core\Payment\PaymentOption();
-		$newOption->setModuleName($this->name)
-			->setCallToActionText('Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní')
-			->setAction($this->context->link->getModuleLink($this->name, 'payment', array(), true))
-			// ->setAdditionalInformation($this->l('Ahoj platby addintional information'));
-			->setAdditionalInformation($this->render('hook', 'payment.tpl'));
-
-		$payment_options = [
-			$newOption,
-		];
-
+		
 		return $payment_options;
 	}
 
@@ -142,20 +152,37 @@ class ahojplatby extends PaymentModule
 
 		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true);
+		$payment_methods = $this->api->ahojpay->getPaymentMethods($total);
+		$available_payment_methods = array();
 
-		$is_available = $this->api->isAvailableForTotalPrice($total);
-		if(!$is_available)
+		if(count($payment_methods) > 0)
 		{
-			return false;
+			foreach ($payment_methods as $key => $payment_method) {
+
+				// pokial nie je dostupna platba preskocit
+				if(!$payment_method['isAvailable']) continue;
+
+				$description = $this->api->generatePaymentMethodDescriptionHtml(
+					$total, 
+					$payment_method['promotionCode'], 
+					$payment_method['promotionCode']
+				);
+
+				$available_payment_methods[] = array(
+					'name'			=>	Ahojplatby::PAYMENT_NAME_PREFIX.$payment_method['name'],
+					'description'	=>	$description,
+					'promotionCode'	=>	$payment_method['promotionCode'],
+					'action'		=>	$this->context->link->getModuleLink($this->name, 'payment', 
+											array(
+												'promotioncode' => $payment_method['promotionCode']
+											)
+										, true)
+				);
+			}
 		}
 
-		$promotion_info = $this->api->getPromotionInfo();
-		$description = $this->api->generatePaymentMethodDescriptionHtml($total);
-
 		$this->smarty->assign(array(
-			'payment_module_name' => 'Ahoj - Kúp teraz, zaplať o '.$promotion_info['instalmentIntervalDays'].' dní',
-			'promotion_info' => $promotion_info,
-			'description' => $description,
+			'available_payment_methods' => $available_payment_methods,
 			'ahoj_logo_url'	=>	Tools::getHttpHost(true).__PS_BASE_URI__.'modules/ahojplatby/img/ahoj-logo-1x.png',
 			'this_path' => $this->_path,
 			'this_path_ssl' => Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
