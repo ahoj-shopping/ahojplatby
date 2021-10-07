@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.3.0';
+		$this->version = '1.3.1';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -284,7 +284,7 @@ class ahojplatby extends PaymentModule
 		else
 		{	
 			$product = new Product(Tools::getValue('id_product'));
-			$price = AhojApi::formatPrice($product->price);
+			$price = AhojApi::formatPrice($product->getPrice());
 		}
 
 		$this->api->init();
