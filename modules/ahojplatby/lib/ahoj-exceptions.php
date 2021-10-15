@@ -22,7 +22,8 @@ class ApiErrorException extends \Exception
         if (is_array($body) && array_key_exists('message', $body)) {
             $message .= $body['message'];
         }
-        $message .= "\"$body\"";
+        // $message .= "\"$body\"";
+        $message .= "\"$message\"";
         parent::__construct($message, $code);
     }
 }

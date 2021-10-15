@@ -31,7 +31,6 @@ class AhojPay
         'prod' => 'https://eshop.ahojsplatky.sk/merchant/plugin/ahojpay.js',
     );
 
-
     /**
      * Priklad pouzitia:
      * <?php
@@ -721,6 +720,7 @@ class AhojPay
         // By default is this ESHOP. Should be configurable in future versions od AhojPay service
         $applicationRequest['salesChannel'] = 'ESHOP';
         $applicationRequest['state'] = 'DRAFT';
+        $applicationRequest['eshopWeb'] = $_SERVER['SERVER_NAME'];
 
         // always SK - integration manual
         $applicationRequest['customer']['permanentAddress']['country'] = array(
