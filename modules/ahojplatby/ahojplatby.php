@@ -40,7 +40,7 @@ class ahojplatby extends PaymentModule
 	public $callback_url;
 	public $is17 = false;
 
-	CONST PAYMENT_NAME_PREFIX = 'Ahoj - ';
+	CONST PAYMENT_NAME_PREFIX = '';
 
 	public function __construct()
 	{

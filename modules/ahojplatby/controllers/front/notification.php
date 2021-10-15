@@ -15,7 +15,6 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 	// 7. APPROVED
 	// 7. ACTIVE
 
-
 	public function initContent()
 	{
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
@@ -134,12 +133,6 @@ class AhojplatbyNotificationModuleFrontController extends ParentController
 			Tools::jsonEncode($result)
 		);
 
-		dd(array(
-			$id_order_state,
-			$data['orderNumber'],
-			$data['state'],
-			$data,
-		), true);
 	}
 
 

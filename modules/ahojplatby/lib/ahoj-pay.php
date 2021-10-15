@@ -372,6 +372,10 @@ class AhojPay
         $responseBody = $response['body'];
         $responseCode = $response['code'];
 
+        if($responseCode == 400){
+            return null;
+        }
+        
         if ($responseCode > 200) {
             throw new ApiErrorException($responseBody, $responseCode);
         }

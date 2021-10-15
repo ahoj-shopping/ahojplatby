@@ -130,6 +130,15 @@ class AhojplatbyValidationModuleFrontController extends ParentController
 		// 	true
 		// );
 
+		PrestaShopLogger::addLog(
+			'Validation: redirect to '.$action,
+			2,
+			null,
+			$this->module->name,
+			$id_order,
+			true
+		);
+
 		Tools::redirect($order_confirmation_url);
 
 		// // redirect to order-confirmation 1.7
