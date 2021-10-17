@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.3.4';
+		$this->version = '1.3.5';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 

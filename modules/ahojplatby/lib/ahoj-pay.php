@@ -372,10 +372,10 @@ class AhojPay
         $responseBody = $response['body'];
         $responseCode = $response['code'];
 
-        if($responseCode == 400){
-            return null;
+        if ($responseCode == 400) {
+            return array();
         }
-        
+
         if ($responseCode > 200) {
             throw new ApiErrorException($responseBody, $responseCode);
         }
@@ -662,10 +662,10 @@ class AhojPay
     {
         switch ($promotionInfo['productType']) {
             case AhojPay::PRODUCT_TYPE_CODE_ODLOZTO:
-                return 'o ' . $promotionInfo['instalmentIntervalDays'] . ' dní bez navýšenia';
+                return 'Ahoj - platba o ' . $promotionInfo['instalmentIntervalDays'] . ' dní bez navýšenia';
                 break;
             case AhojPay::PRODUCT_TYPE_CODE_ROZLOZTO:
-                return 'v ' . $promotionInfo['instalmentCount']['from'] . ' platbách bez navýšenia';
+                return 'Ahoj - v ' . $promotionInfo['instalmentCount']['from'] . ' platbách bez navýšenia';
                 break;
             default:
                 return '';
