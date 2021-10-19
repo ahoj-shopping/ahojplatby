@@ -30,6 +30,6 @@
       <p>
         {l s='PLATBA ZRUŠENÁ' d='Modules.Ahojplatby.Shop'}<br/>
       </p>
-      {l s='Platba Ahoj - Kúp teraz, zaplať o 30 dní bola zrušená. Na zaplatenie objednávky je potrebné zvoliť iný spôsob platby, kontaktujte e-shop. Ďakujeme.' d='Modules.Ahojplatby.Shop'}
+      {l s='Platba ' d='Modules.Ahojplatby.Shop'} <b>{$payment}</b> {l s=' bola zrušená. Na zaplatenie objednávky je potrebné zvoliť iný spôsob platby, kontaktujte e-shop. Ďakujeme.' d='Modules.Ahojplatby.Shop'}
     </p>
 {/if}

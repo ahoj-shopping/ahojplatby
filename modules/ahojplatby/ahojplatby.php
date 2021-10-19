@@ -246,8 +246,18 @@ class ahojplatby extends PaymentModule
 		// 	);
 		// }
 
+		if($this->is17)
+		{
+			$payment = $params['order']->payment;
+		}
+		else
+		{
+			$payment = $params['objOrder']->payment;
+		}
+
 		$this->smarty->assign(
 			array(
+				'payment'	=>	$payment,
 				'status' => Tools::getValue('status'),
 				'contact_url' => $this->context->link->getPageLink('contact', true),
 			)
