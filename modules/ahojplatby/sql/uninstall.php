@@ -32,8 +32,7 @@
 $sql = array();
 
 // TODO CHANGE IN PRODUCTION 
-// $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'asdata_gls_main_account`';
-// $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'asdata_gls_web_service_pick_up_address`';
+// $sql[] = 'DROP TABLE IF EXISTS `'._DB_PREFIX_.'table`';
 
 
 foreach ($sql as $query) {

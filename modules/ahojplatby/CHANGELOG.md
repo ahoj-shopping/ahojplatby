@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.3.6] - 2021-10-19
 ### Changed
 - fix payment return hook payment name
+- Task #4433 fix exception catch handler
 
 ## [1.3.5] - 2021-10-17
 ### Changed
