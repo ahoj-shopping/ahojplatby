@@ -1,6 +1,12 @@
 *
+
 !modules/ahojplatby/
-!modules/ahojplatby/*
+!modules/ahojplatby/**
+!modules/ahojplatby/*/*
+!modules/ahojplatby/*/*/
+!modules/ahojplatby/classes/*.php
+modules/ahojplatby/_data
+
 !.github/
 !.github/*
 !README.md

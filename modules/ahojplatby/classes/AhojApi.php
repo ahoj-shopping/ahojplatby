@@ -81,9 +81,13 @@ class AhojApi
 				"eshopKey" => $eshop_key,
 				"notificationCallbackUrl" => $this->callback_url,
 			));
-		} catch (PrestaShopException $e) {
-	  		// Error handling
-			Tools::displayError($e->getMessage());
+		} catch (Exception $e) {
+			// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
 
 	}
@@ -93,15 +97,49 @@ class AhojApi
 		if(!isset($this->ahojpay) || !$this->ahojpay)
 			return array();
 
+		$js = '';
+		$html_banner = '';
+
+		try {
+			$js = $this->ahojpay->generateInitJavaScriptHtml();
+			$html_banner = $this->ahojpay->generateProductBannerHtml($price);
+
+		} catch (Exception $e) {
+			// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
+		}
+
 		return array(
-			'js' => $this->ahojpay->generateInitJavaScriptHtml(),
-			'html_banner' => $this->ahojpay->generateProductBannerHtml($price)
+			'js' => $js,
+			'html_banner' => $html_banner
 		);
 	}
 
 	public function getInitJavascriptHtml()
 	{
-		return $this->ahojpay->generateInitJavaScriptHtml();
+		if(!$this->ahojpay)
+			return;
+
+		$js = '';
+
+		try {
+			
+			$js = $this->ahojpay->generateInitJavaScriptHtml();
+
+		} catch (Exception $e) {
+			// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
+		}
+
+		return $js;
 	}
 
 	public function setOrder($order)
@@ -144,9 +182,13 @@ class AhojApi
 
 		try {
 			$response = $this->ahojpay->createApplication($data, $promotioncode);
-		} catch (PrestaShopException $e) {
+		} catch (Exception $e) {
 			// Error handling
-			// Tools::displayError($e->getMessage());
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
 
 		if($this->debug)
@@ -374,12 +416,19 @@ class AhojApi
 	// }
 
 	public function getCalculations($price = 0)
-	{
+	{	
+		if(!$this->ahojpay)
+			return;
+
 		try {
 			$response = $this->ahojpay->getCalculations($price);
-		} catch (PrestaShopException $e) {
+		} catch (Exception $e) {
 			// Error handling
-			// Tools::displayError($e->getMessage());
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
 
 		return $response;
@@ -387,11 +436,18 @@ class AhojApi
 
 	public function getPaymentMethods($total = 0)
 	{
+		if(!$this->ahojpay)
+			return array();
+
 		try {
 			$response = $this->ahojpay->getPaymentMethods($total);
-		} catch (PrestaShopException $e) {
+		} catch (Exception $e) {
 			// Error handling
-			// Tools::displayError($e->getMessage());
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
 
 		return $response;
@@ -399,11 +455,18 @@ class AhojApi
 
 	public function getPromotionInfo()
 	{
+		if(!$this->ahojpay)
+			return;
+
 		try {
 			$response = $this->ahojpay->getPromotionInfo();
-		} catch (PrestaShopException $e) {
-			// Error handling
-			// Tools::displayError($e->getMessage());
+		} catch (Exception $e) {
+							// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
 
 		return $response;
@@ -411,23 +474,38 @@ class AhojApi
 
 	public function isAvailableForTotalPrice($total = 0)
 	{
+		if(!$this->ahojpay)
+			return;
+
 		try {
 			$response = $this->ahojpay->isAvailableForTotalPrice($total);
-		} catch (PrestaShopException $e) {
+		} catch (Exception $e) {
 			// Error handling
-			// Tools::displayError($e->getMessage());
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
 		}
-
 		return $response;
 	}
 
 	public function isAvailableForItemPrice($itemPrice = 0)
 	{
+		if(!$this->ahojpay)
+			return;
+
+		$response = false;
+
 		try {
 			$response = $this->ahojpay->isAvailableForItemPrice($itemPrice);
-		} catch (PrestaShopException $e) {
+		} catch (Exception $e) {
 			// Error handling
-			// Tools::displayError($e->getMessage());
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			} 
 		}
 
 		return $response;
@@ -435,10 +513,30 @@ class AhojApi
 
 	public function generatePaymentMethodDescriptionHtml($total = 0, $cssClass = 'default', $productType = false)
 	{
+		if(!$this->ahojpay)
+			return;
+
+		$js = '';
+		$html_description = '';
+
+		try {
+			$js = $this->ahojpay->generateInitJavaScriptHtml();
+			$html_description = $this->ahojpay->generatePaymentMethodDescriptionHtml($total, $cssClass, $productType);
+
+		} catch (Exception $e) {
+			// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			} 
+		}
+
 		return array(
-			'js' => $this->ahojpay->generateInitJavaScriptHtml(),
-			'html_description' => $this->ahojpay->generatePaymentMethodDescriptionHtml($total, $cssClass, $productType)
+			'js' => $js,
+			'html_description' => $html_description
 		);
+
 	}
 
 	public function getSecurityToken($id_order, $action)

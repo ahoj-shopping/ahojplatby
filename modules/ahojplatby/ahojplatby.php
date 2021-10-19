@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.3.5';
+		$this->version = '1.3.6';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -105,6 +105,7 @@ class ahojplatby extends PaymentModule
 			return;
 		}
 		
+		$payment_options = array();
 		$this->api->init();
 		$total = (float)$this->context->cart->getOrderTotal(true);
 		$payment_methods = $this->api->getPaymentMethods($total);
