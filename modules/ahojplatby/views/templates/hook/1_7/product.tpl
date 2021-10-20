@@ -1,9 +1,13 @@
 {* product Additional Info *}
 
-{if $banner_data}
+<script type="text/javascript">
+var banner_ajax_url = "{$banner_ajax_url}";
+</script>
 
-	{* javascript include *}
-	{$banner_data.js nofilter}
+{* javascript include *}
+{$js nofilter}
+
+{if $banner_data}
 
 	{* banner *}
 	{$banner_data.html_banner nofilter}

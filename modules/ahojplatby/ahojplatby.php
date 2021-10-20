@@ -58,7 +58,6 @@ class ahojplatby extends PaymentModule
 		$this->currencies = true;
 		$this->currencies_mode = 'checkbox';
 
-
 		parent::__construct();
 
 		$this->displayName = $this->l('Ahoj platby');
@@ -74,9 +73,7 @@ class ahojplatby extends PaymentModule
 		// $this->callback_url = $this->context->link->getModuleLink('ahojplatby', 'validation');
 
 		$this->api = new AhojApi($this);
-
 	}
-
 
 	/**
 	* Add the CSS & JavaScript files you want to be loaded in the BO.
@@ -88,14 +85,14 @@ class ahojplatby extends PaymentModule
 
 		if (Tools::getValue('module_name') == $this->name) {
 			$this->context->controller->addCSS($this->_path.'views/css/back.css');
-			
 		}
 	}
 
 	public function hookDisplayHeader()
 	{ 
 		$this->context->controller->addCSS($this->_path.'views/css/ahojplatby.css');
-		// $this->context->controller->addJS($this->_path.'views/js/ahojplatby.js');
+		if(!$this->is17)
+			$this->context->controller->addJS($this->_path.'views/js/ahojplatby_1_6.js');
         // $this->context->controller->addJS($this->_path.'js/nivo-slider/jquery.nivo.slider.js');
 	}
 
@@ -194,59 +191,6 @@ class ahojplatby extends PaymentModule
 
 	public function hookDisplayPaymentReturn($params)
 	{
-		// if (!$this->active || !Configuration::get(self::FLAG_DISPLAY_PAYMENT_INVITE)) {
-		// 	return;
-		// }
-
-		// $state = $params['order']->getCurrentState();
-		// if (
-		// 	in_array(
-		// 		$state,
-		// 		array(
-		// 			Configuration::get('PS_OS_BANKWIRE'),
-		// 			Configuration::get('PS_OS_OUTOFSTOCK'),
-		// 			Configuration::get('PS_OS_OUTOFSTOCK_UNPAID'),
-		// 		)
-		// 	)) {
-		// 	$bankwireOwner = $this->owner;
-		// 	if (!$bankwireOwner) {
-		// 		$bankwireOwner = '___________';
-		// 	}
-
-		// 	$bankwireDetails = Tools::nl2br($this->details);
-		// 	if (!$bankwireDetails) {
-		// 		$bankwireDetails = '___________';
-		// 	}
-
-		// 	$bankwireAddress = Tools::nl2br($this->address);
-		// 	if (!$bankwireAddress) {
-		// 		$bankwireAddress = '___________';
-		// 	}
-
-		// 	$totalToPaid = $params['order']->getOrdersTotalPaid() - $params['order']->getTotalPaid();
-		// 	$this->smarty->assign(array(
-		// 		'shop_name' => $this->context->shop->name,
-		// 		'total' => Tools::displayPrice(
-		// 			$totalToPaid,
-		// 			new Currency($params['order']->id_currency),
-		// 			false
-		// 		),
-		// 		'bankwireDetails' => $bankwireDetails,
-		// 		'bankwireAddress' => $bankwireAddress,
-		// 		'bankwireOwner' => $bankwireOwner,
-		// 		'status' => 'ok',
-		// 		'reference' => $params['order']->reference,
-		// 		'contact_url' => $this->context->link->getPageLink('contact', true)
-		// 	));
-		// } else {
-		// 	$this->smarty->assign(
-		// 		array(
-		// 			'status' => 'failed',
-		// 			'contact_url' => $this->context->link->getPageLink('contact', true),
-		// 		)
-		// 	);
-		// }
-
 		if($this->is17)
 		{
 			$payment = $params['order']->payment;
@@ -272,56 +216,61 @@ class ahojplatby extends PaymentModule
 		// return 'test hook orderConfirmation';
 	}
 
-	public function hookDisplayProductExtraContent($params)
-	{
-		$array = array();
-		$array[] = (new PrestaShop\PrestaShop\Core\Product\ProductExtraContent())
-			->setTitle('tittle')
-			->setContent('content');
-		return $array;
-
-		return 'ahojplatby hook product extra content';
-	}
-
 	public function hookDisplayProductAdditionalInfo($params)
 	{
 		if($this->is17)
 		{
+			$id_product = $params['product']->id;
 			$price = $params['product']->rounded_display_price;
-			// Task 4343
+			// Task #4343
 			if(!$price)
 				$price = $params['product']->price_amount;
 		}
 		else
 		{	
 			$product = new Product(Tools::getValue('id_product'));
+			$id_product = $product->id;
 			$price = AhojApi::formatPrice($product->getPrice());
 		}
 
-		$this->api->init();
-		$is_available = $this->api->isAvailableForItemPrice($price);
-		if(!$is_available)
-		{
-			return false;
+		$banner_data = false;
+
+		$cacheId = $this->getCacheIdCustom($id_product, $price);
+		if (!$this->isCached($this->getTemplateString('hook', 'product.tpl'), $cacheId)) {
+
+			$this->api->init();
+			$is_available = $this->api->isAvailableForItemPrice($price);
+			if($is_available)
+			{
+				$banner_data = $this->api->getProductData($price, true);
+			}
+
+			$this->smarty->assign(array(
+				'banner_ajax_url'	=>	$this->context->link->getModuleLink('ahojplatby', 'banner'),
+				'js'	=>	$this->api->getInitJavascriptHtml(),
+				'banner_data' => $banner_data
+			));
 		}
-
-		$banner_data = $this->api->getProductData($price);
-
-		$this->smarty->assign(array(
-			'banner_ajax_url'	=>	$this->context->link->getModuleLink('ahojplatby', 'banner'),
-			'banner_data' => $banner_data
-		));
-
-		return $this->render('hook', 'product.tpl');
+		
+		return $this->render('hook', 'product.tpl', false, $cacheId);
 	}
-
 
 	public function hookDisplayRightColumnProduct($params)
 	{
 		return $this->hookDisplayProductAdditionalInfo($params);
 	}
 
-	public function render($type = 'front', $template = 'file.tpl', $same_file = false)
+	public function getTemplateString($type = 'front', $template = 'file.tpl')
+	{
+		if($this->is17)
+			$ver = '/1_7/';
+		else
+			$ver = '/1_6/';
+
+		return 'views/templates/'.$type.$ver.$template;
+	}
+
+	public function render($type = 'front', $template = 'file.tpl', $same_file = false, $cacheId = false)
 	{
 		if($same_file)
 		{
@@ -335,15 +284,20 @@ class ahojplatby extends PaymentModule
 				$ver = '/1_6/';
 		}
 
-
 		if($this->is17)
 		{
-			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
+			// return $this->fetch($this->getTemplateString($type, $template), $cacheId);
+			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
 		}
 		else
 		{
-			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
+			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
 		}
 	}
 	
+	public function getCacheIdCustom($id_product, $price)
+	{
+		$price = md5($price);
+	    return parent::getCacheId() . '|' . (string) $id_product . '|' . (string)$price;
+	}
 }

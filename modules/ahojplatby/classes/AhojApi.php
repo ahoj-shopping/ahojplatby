@@ -92,7 +92,7 @@ class AhojApi
 
 	}
 
-	public function getProductData($price = 0)
+	public function getProductData($price = 0, $get_html_banner = false)
 	{	
 		if(!isset($this->ahojpay) || !$this->ahojpay)
 			return array();
@@ -102,7 +102,9 @@ class AhojApi
 
 		try {
 			$js = $this->ahojpay->generateInitJavaScriptHtml();
-			$html_banner = $this->ahojpay->generateProductBannerHtml($price);
+			// Task #4433 uz len cez ajax
+			if($get_html_banner)
+				$html_banner = $this->ahojpay->generateProductBannerHtml($price);
 
 		} catch (Exception $e) {
 			// Error handling
