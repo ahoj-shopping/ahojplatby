@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - fix payment return hook payment name
 - Task #4434 fix exception catch handler
 - Task #4433 add cache for product-page hook
+- fix product-page js
 
 ## [1.3.5] - 2021-10-17
 ### Changed

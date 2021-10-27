@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.3.6';
+		$this->version = '1.4.0';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -92,7 +92,12 @@ class ahojplatby extends PaymentModule
 	{ 
 		$this->context->controller->addCSS($this->_path.'views/css/ahojplatby.css');
 		if(!$this->is17)
-			$this->context->controller->addJS($this->_path.'views/js/ahojplatby_1_6.js');
+		{
+			if ( in_array($this->context->controller->php_self, array('product')) ) 
+			{
+				$this->context->controller->addJS($this->_path.'views/js/ahojplatby_1_6.js');
+			}
+		}
         // $this->context->controller->addJS($this->_path.'js/nivo-slider/jquery.nivo.slider.js');
 	}
 
