@@ -97,6 +97,12 @@ class ahojplatby extends PaymentModule
 			{
 				$this->context->controller->addJS($this->_path.'views/js/ahojplatby_1_6.js');
 			}
+
+			if ( in_array($this->context->controller->php_self, array('order-opc')) ) 
+			{
+				$this->api->init();
+				$this->context->controller->addJS($this->api->getJsScriptUrl(), false);
+			}
 		}
         // $this->context->controller->addJS($this->_path.'js/nivo-slider/jquery.nivo.slider.js');
 	}

@@ -121,6 +121,29 @@ class AhojApi
 		);
 	}
 
+	public function getJsScriptUrl()
+	{
+		if(!$this->ahojpay)
+			return;
+
+		$js = '';
+
+		try {
+			
+			$js = $this->ahojpay->getJsScriptUrl();
+
+		} catch (Exception $e) {
+			// Error handling
+			ErrorHandle::displayError($e->getMessage());
+			if($this->debug)
+			{
+				Tools::displayError($e->getMessage());
+			}
+		}
+
+		return $js;
+	}
+	
 	public function getInitJavascriptHtml()
 	{
 		if(!$this->ahojpay)
