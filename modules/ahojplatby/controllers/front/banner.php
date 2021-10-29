@@ -7,9 +7,10 @@ class AhojplatbyBannerModuleFrontController extends ParentController
 		$debug = Configuration::get('AHOJPLATBY_MODULE_DEBUG');
 		$auto_redirect = Configuration::get('AHOJPLATBY_AUTOMATICALLY_REDIRECT');
 
+		parent::initContent();
+
 		$price = Tools::getValue('price');
 		$price = round($price, 6);
-		parent::initContent();
 
 		// init api 
 		$this->module->api->init();

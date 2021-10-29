@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.4.1';
+		$this->version = '1.4.2';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -115,7 +115,7 @@ class ahojplatby extends PaymentModule
 		
 		$payment_options = array();
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true);
+		$total = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
 		$payment_methods = $this->api->getPaymentMethods($total);
 
 		if(count($payment_methods) > 0)
@@ -160,7 +160,7 @@ class ahojplatby extends PaymentModule
 			return;
 
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true);
+		$total = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
 		$payment_methods = $this->api->getPaymentMethods($total);
 		$available_payment_methods = array();
 
@@ -298,11 +298,19 @@ class ahojplatby extends PaymentModule
 		if($this->is17)
 		{
 			// return $this->fetch($this->getTemplateString($type, $template), $cacheId);
-			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
+			if($cacheId)
+				return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
+			else
+				return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
+
 		}
 		else
 		{
-			return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
+			if($cacheId)
+				return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template, $cacheId);
+			else
+				return $this->display(__FILE__, 'views/templates/'.$type.$ver.$template);
+
 		}
 	}
 	
