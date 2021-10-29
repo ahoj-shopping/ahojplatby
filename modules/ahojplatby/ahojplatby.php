@@ -46,7 +46,7 @@ class ahojplatby extends PaymentModule
 	{
 		$this->name = 'ahojplatby';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.4.2';
+		$this->version = '1.4.3';
 		$this->author = 'Ahoj, a.s.';
 		$this->need_instance = 1;
 
@@ -115,8 +115,9 @@ class ahojplatby extends PaymentModule
 		
 		$payment_options = array();
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
-		$payment_methods = $this->api->getPaymentMethods($total);
+		$total_products = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
+		$total = (float)$this->context->cart->getOrderTotal(true);
+		$payment_methods = $this->api->getPaymentMethods($total_products);
 
 		if(count($payment_methods) > 0)
 		{
@@ -160,8 +161,9 @@ class ahojplatby extends PaymentModule
 			return;
 
 		$this->api->init();
-		$total = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
-		$payment_methods = $this->api->getPaymentMethods($total);
+		$total_products = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
+		$total = (float)$this->context->cart->getOrderTotal(true);
+		$payment_methods = $this->api->getPaymentMethods($total_products);
 		$available_payment_methods = array();
 
 		if(count($payment_methods) > 0)
