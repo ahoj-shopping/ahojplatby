@@ -4,8 +4,8 @@ Modul Ahoj platby pre open source ecommerce systém PrestaShop verzie 1.6 a 1.7
 
 ## Postup inštalácie
 
-- Stiahnite si modul vo formáte zip (zip súbor s názvom modulu - ahojplatby-"verzia".zip)
-- [Stiahnuť aktuálnu verziu modulu](https://github.com/ahoj-shopping/ahojplatby/releases/latest)
+- Stiahnite si modul vo formáte zip (zip súbor s názvom modulu - ahojplatby-latest-release-zip)
+- [Stiahnuť aktuálnu verziu modulu](https://github.com/ahoj-shopping/ahojplatby/releases/latest/download/ahojplatby-latest-release.zip)
 - Postupujte podľa inštalačnej príručky
 - [Inštalačná príručka pre PrestaShop 1.6 a 1.7](https://github.com/ahoj-shopping/ahojplatby/blob/master/modules/ahojplatby/install_Ahoj_platby_PrestaShop_1.6_a_1.7.pdf)
 
