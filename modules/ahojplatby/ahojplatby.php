@@ -113,11 +113,18 @@ class ahojplatby extends PaymentModule
 			return;
 		}
 		
-		$payment_options = array();
 		$this->api->init();
 		$total_products = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
 		$total = (float)$this->context->cart->getOrderTotal(true);
+
+		$is_available = $this->api->isAvailableForTotalPrice($total);
+		if(!$is_available)
+		{
+			return false;
+		}
+
 		$payment_methods = $this->api->getPaymentMethods($total_products);
+		$payment_options = array();
 
 		if(count($payment_methods) > 0)
 		{
@@ -163,6 +170,13 @@ class ahojplatby extends PaymentModule
 		$this->api->init();
 		$total_products = (float)$this->context->cart->getOrderTotal(true, Cart::BOTH_WITHOUT_SHIPPING);
 		$total = (float)$this->context->cart->getOrderTotal(true);
+		
+		$is_available = $this->api->isAvailableForTotalPrice($total);
+		if(!$is_available)
+		{
+			return false;
+		}
+		
 		$payment_methods = $this->api->getPaymentMethods($total_products);
 		$available_payment_methods = array();
 
