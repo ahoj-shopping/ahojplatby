@@ -239,7 +239,7 @@ class AhojApi
 				'registerNumber' => $address->address2,
 				'referenceNumber' => '',
 				'city' => $address->city,
-				'zipCode' => $address->postcode,
+				'zipCode' => AhojApi::formatPostCode($address->postcode),
 			),
 		);
 	}
@@ -863,5 +863,10 @@ class AhojApi
 	{
 		$price = round($price, 2);
 		return number_format((float)$price, 2, '.', '');  // Outputs -> 105.00
+	}
+
+	public static function formatPostCode($postcode = '')
+	{
+		return str_replace(' ', '', $postcode);
 	}
 }
