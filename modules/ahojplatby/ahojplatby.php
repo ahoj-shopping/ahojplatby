@@ -104,7 +104,24 @@ class ahojplatby extends PaymentModule
 				$this->context->controller->addJS($this->api->getJsScriptUrl(), false);
 			}
 		}
-        // $this->context->controller->addJS($this->_path.'js/nivo-slider/jquery.nivo.slider.js');
+
+		if($this->is17)
+		{
+			if(Module::isInstalled('steasycheckout'))
+			{
+				$this->api->init();
+				$this->context->controller->registerJavascript(
+					'ahojplatby', 
+					(string)$this->api->getJsScriptUrl(), 
+					array(
+						'server' => 'remote', 
+						'media' => 'all'
+					)
+				);
+			}
+			
+		}
+		
 	}
 
 	public function hookPaymentOptions()
