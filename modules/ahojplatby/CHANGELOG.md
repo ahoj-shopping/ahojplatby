@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.4.4] - 2021-12-18
 ### Added
 - add format postCode
-- fix js load for steasycheckout
+- Task #4578 fix js load for steasycheckout
 
 ### Changed
 - minor changes

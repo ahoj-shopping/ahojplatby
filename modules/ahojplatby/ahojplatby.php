@@ -107,7 +107,8 @@ class ahojplatby extends PaymentModule
 
 		if($this->is17)
 		{
-			if(Module::isInstalled('steasycheckout'))
+			// Task #4578
+			if(Module::isInstalled('steasycheckout') && Module::isEnabled('steasycheckout'))
 			{
 				$this->api->init();
 				$this->context->controller->registerJavascript(
